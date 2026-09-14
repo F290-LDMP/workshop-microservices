@@ -233,9 +233,18 @@ open http://localhost:8761
 sequenceDiagram
     autonumber
     actor C as Cliente
-    C->>GW: GET /product-composite/1 (:8080)
+    participant GW as Gateway (:8080)
+    participant EUR as Eureka
+    participant PC as product-composite (:7000)
+    participant P as product-service
+    participant M1 as MongoDB (products)
+    participant R as recommendation-service
+    participant M2 as MongoDB (recommendations)
+    participant V as review-service
+    participant S as MySQL (reviews)
+    C->>GW: GET /product-composite/1
     GW->>EUR: resolve lb://product-composite
-    GW->>PC: forward (:7000)
+    GW->>PC: forward
     PC->>EUR: resolve "product" / "recommendation" / "review"
     par três chamadas
         PC->>P: GET /product/1
