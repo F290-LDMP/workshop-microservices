@@ -2,7 +2,6 @@
 
 > Laboratório de Desenvolvimento Multiplataforma — FATEC
 > Atividade baseada no livro **"Microservices with Spring Boot 3 and Spring Cloud, 3rd Edition"** (Magnus Larsson, Packt), capítulos 3, 6, 9 e 10.
-> Código-fonte de referência: capítulos `Chapter03`, `Chapter06`, `Chapter09` e `Chapter10` do repositório oficial do livro.
 
 ## Objetivos de aprendizagem
 
