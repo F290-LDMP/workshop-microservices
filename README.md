@@ -1,7 +1,6 @@
 # Workshop: Microservices com Spring Boot 3 e Spring Cloud
 
-> Laboratório de Desenvolvimento Multiplataforma — FATEC
-> Atividade baseada no livro **"Microservices with Spring Boot 3 and Spring Cloud, 3rd Edition"** (Magnus Larsson, Packt), capítulos 3, 6, 9 e 10.
+> Laboratório de Desenvolvimento Multiplataforma — FATEC Antonio Brambilla
 
 ## Objetivos de aprendizagem
 
