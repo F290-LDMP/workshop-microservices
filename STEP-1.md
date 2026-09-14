@@ -178,9 +178,9 @@ String address = registration.getHost() + ":" + registration.getPort();
 - [ ] `gateway` (porta 8080): dependência `spring-cloud-starter-gateway` + eureka-client.
 - [ ] Rotas (via `spring.cloud.gateway.routes` no `application.yml`):
   - `/product-composite/**` → `lb://product-composite` (rota principal)
-  - `/product/**` → `lb://product` (rota de **debug** — aceite individual do grupo 1)
-  - `/review/**` → `lb://review` (rota de **debug** — aceite individual do grupo 2)
-  - `/recommendation/**` → `lb://recommendation` (rota de **debug** — aceite individual do grupo 3)
+  - `/product/**` → `lb://product` (rota de **debug**, opcional — aceite individual do grupo 1)
+  - `/review/**` → `lb://review` (rota de **debug**, opcional — aceite individual do grupo 2)
+  - `/recommendation/**` → `lb://recommendation` (rota de **debug**, opcional — aceite individual do grupo 3)
   - `/eureka/web`, `/eureka/api/**` → dashboard do Eureka via gateway (opcional)
 - [ ] Health check: expor `/actuator/health` com `show-details: ALWAYS`.
 
@@ -189,11 +189,9 @@ String address = registration.getHost() + ":" + registration.getPort();
 1. **Grupo 5**: subir o `eureka-server` primeiro.
 2. **Todos**: adicionar `spring-cloud-starter-netflix-eureka-client`, nomear a app (`spring.application.name: product`, `review`, `recommendation`, `product-composite`, `gateway`) e apontar `eureka.client.serviceUrl.defaultZone: http://localhost:8761/eureka/`.
 3. **Todos**: resolver o `serviceAddress` via `Registration` (ver 1.5).
-4. **Balanceamento de carga (todos)** — validar o Spring Cloud LoadBalancer:
-   - Cada grupo sobe uma **2ª instância** do seu serviço (`--server.port=0` ou porta alternativa).
-   - Chamadas repetidas **via Gateway** (`:8080`) devem alternar o `serviceAddress` entre as instâncias (round-robin).
-   - Núcleos são testados pelas rotas de debug (`/product/**`, `/review/**`, `/recommendation/**`); o composite (mock) pela rota `/product-composite/**`.
-5. Validar no dashboard do Eureka (`http://localhost:8761`) as apps **UP** (núcleos/composite podem aparecer 2× durante a demonstração de LB).
+4. Validar no dashboard do Eureka (`http://localhost:8761`) as 5 apps **UP**.
+
+> O **balanceamento de carga** (múltiplas instâncias + round-robin) será demonstrado no STEP-2, quando o ciclo composite→núcleos estiver fechado.
 
 ## 4. Roteiro de testes (curl)
 
@@ -207,12 +205,6 @@ curl localhost:7001/product/0                     # 422
 
 # --- Mesmo núcleo via Gateway (rota de debug) ---
 curl localhost:8080/product/1 | jq
-
-# --- Balanceamento de carga (2 instâncias) ---
-# suba a 2ª instância com:  java -jar build/libs/*.jar --server.port=0
-for i in 1 2 3 4 5 6; do
-  curl -s localhost:8080/product/1 | jq -r '.serviceAddress'
-done                                             # alterna entre as instâncias
 
 # --- Composite (mockado) ---
 curl localhost:8080/product-composite/1 | jq      # agregado mockado fiel ao contrato
@@ -262,8 +254,8 @@ sequenceDiagram
 
 | Grupo | Critérios de aceite |
 |-------|---------------------|
-| **1 – product** | `POST /product`, `GET /product/{id}`, `DELETE /product/{id}` + MongoDB; 404 (id inexistente) e 422 (id < 1, duplicado) conforme contrato; `serviceAddress` preenchido; registrado no Eureka; **LB evidenciado** (2 instâncias alternando `serviceAddress` via `:8080/product/...`) |
-| **2 – review** | `POST /review`, `GET/DELETE /review?productId=` + MySQL; 422 (`productId < 1`); lista vazia → 200; `serviceAddress`; registrado no Eureka; **LB evidenciado** via `:8080/review?productId=...` |
-| **3 – recommendation** | `POST /recommendation`, `GET/DELETE /recommendation?productId=` + MongoDB (map `rating`↔`rate`); 422 (`productId < 1`); lista vazia → 200; `serviceAddress`; registrado no Eureka; **LB evidenciado** via `:8080/recommendation?productId=...` |
-| **4 – composite** | Endpoints `POST/GET/DELETE /product-composite` retornando o **agregado mockado** fiel ao contrato; 422 (id < 1) e 404 (id 13); `serviceAddress` (`cmp`); registrado no Eureka; **LB evidenciado** via `:8080/product-composite/...` |
-| **5 – spring-cloud** | Eureka no ar com as 5 apps **UP**; Gateway com rota do composite + rotas de debug dos 3 núcleos; `/actuator/health` exposto |
+| **1 – product** | `POST /product`, `GET /product/{id}`, `DELETE /product/{id}` + MongoDB; 404 (id inexistente) e 422 (id < 1, duplicado) conforme contrato; `serviceAddress` preenchido; registrado no Eureka (app `product` **UP** no dashboard) |
+| **2 – review** | `POST /review`, `GET/DELETE /review?productId=` + MySQL; 422 (`productId < 1`); lista vazia → 200; `serviceAddress`; registrado no Eureka (app `review` **UP**) |
+| **3 – recommendation** | `POST /recommendation`, `GET/DELETE /recommendation?productId=` + MongoDB (map `rating`↔`rate`); 422 (`productId < 1`); lista vazia → 200; `serviceAddress`; registrado no Eureka (app `recommendation` **UP**) |
+| **4 – composite** | Endpoints `POST/GET/DELETE /product-composite` retornando o **agregado mockado** fiel ao contrato; 422 (id < 1) e 404 (id 13); `serviceAddress` (`cmp`); registrado no Eureka (app `product-composite` **UP**) |
+| **5 – spring-cloud** | Eureka no ar com as 5 apps **UP**; Gateway com rota do composite (+ rotas de debug dos núcleos, opcionais); `/actuator/health` exposto |

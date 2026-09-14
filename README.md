@@ -10,7 +10,7 @@
 - Aplicar persistência poliglota: MongoDB (documento) para product/recommendation e MySQL (relacional) para review.
 - Implementar service discovery com Netflix Eureka e edge server com Spring Cloud Gateway.
 - Definir e respeitar contratos de API entre equipes que desenvolvem em repositórios separados.
-- (Step 2) Integrar os serviços em um monorepo com BFF, OpenFeign e Docker, escalando instâncias.
+- (Step 2) Integrar os serviços em um monorepo com BFF, OpenFeign e Docker, escalando instâncias e demonstrando o **balanceamento de carga** no ciclo completo.
 
 ## O system landscape
 
@@ -56,7 +56,7 @@ flowchart LR
     classDef ext fill:#eee,stroke:#333
 ```
 
-> **Na aula de hoje** o `product-composite-service` responde com dados **mockados** — as setas `PC → núcleos` acima representam o fluxo que será implementado na próxima aula. Núcleos são testados individualmente pelas rotas de debug do Gateway.
+> **Na aula de hoje** o `product-composite-service` responde com dados **mockados** — as setas `PC → núcleos` acima representam o fluxo que será implementado na próxima aula. Núcleos são testados individualmente; **balanceamento de carga** e ciclo completo ficam para o STEP-2.
 
 ## Distribuição dos grupos
 
@@ -65,7 +65,7 @@ flowchart LR
 | 1 | `product-service` | API de produtos + persistência MongoDB | 7001 | web, spring-data-mongodb |
 | 2 | `review-service` | API de reviews + persistência MySQL (JPA) | 7003 | web, spring-data-jpa, driver MySQL |
 | 3 | `recommendation-service` | API de recomendações + persistência MongoDB | 7002 | web, spring-data-mongodb |
-| 4 | `product-composite-service` | Orquestra os 3 núcleos via RestTemplate | 7000 | web |
+| 4 | `product-composite-service` | BFF/orquestrador — **mock** na aula 1; integração real e balanceamento no Step 2 | 7000 | web |
 | 5 | `spring-cloud` | `eureka-server` (Discovery) + `gateway` (Edge Server) | 8761 / 8080 | netflix-eureka-server, spring-cloud-gateway |
 
 ## Convenções comuns (obrigatórias para todos)
@@ -82,9 +82,8 @@ flowchart LR
 flowchart LR
     A["1. Alinhamento dos contratos<br/>(todos, ~15 min)"] --> B["2. Desenvolvimento isolado<br/>(grupos, ~60–75 min)"]
     B --> C["3. Registro no Eureka<br/>(todos, ~15 min)"]
-    C --> D["4. Balanceamento de carga<br/>(2 instâncias por serviço, ~15 min)"]
-    D --> E["5. Aceite individual por grupo<br/>via Gateway :8080"]
-    E --> F["6. Retro + premissas<br/>do STEP-2 (composite real)"]
+    C --> D["4. Aceite individual por grupo<br/>(endpoints + dashboard)"]
+    D --> E["5. Retro + premissas do STEP-2<br/>(composite real + balanceamento)"]
 ```
 
 ## Materiais
@@ -94,6 +93,7 @@ flowchart LR
 
 ## Critérios de entrega (por grupo)
 
-- Critérios **individuais** por grupo no [STEP-1 §6](STEP-1.md#6-critérios-de-aceite--por-grupo): endpoints próprios, códigos 404/422, `serviceAddress`, registro no Eureka e **balanceamento de carga** evidenciado.
-- Composite (grupo 4): entrega o contrato **mockado** — a orquestração real dos núcleos fica para a próxima aula.
+- Critérios **individuais** por grupo no [STEP-1 §6](STEP-1.md#6-critérios-de-aceite--por-grupo): endpoints próprios, códigos 404/422, `serviceAddress` e registro no Eureka.
+- Composite (grupo 4): entrega o contrato **mockado** — orquestração real dos núcleos e **balanceamento de carga** ficam para o STEP-2.
+- Acessibilidade via Gateway (rota do composite + rotas de debug opcionais).
 - README do próprio repositório com instruções de execução (como subir o banco local e o serviço).

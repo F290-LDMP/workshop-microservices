@@ -1,6 +1,6 @@
 # STEP 2 — Monorepo + BFF com OpenFeign + Docker (premissa da próxima aula)
 
-> ⚠️ **Fora do escopo da aula atual.** Este documento descreve, parcialmente, o que faremos na próxima aula: consolidar os 5 repositórios em um monorepo, transformar o composite em um BFF com OpenFeign e dockerizar o cenário completo com possibilidade de escala.
+> ⚠️ **Fora do escopo da aula atual.** Este documento descreve, parcialmente, o que faremos na próxima aula: consolidar os 5 repositórios em um monorepo, **fechar o ciclo composite→núcleos** (BFF com OpenFeign), demonstrar o **balanceamento de carga** no ciclo completo e dockerizar o cenário com possibilidade de escala.
 
 ## 1. Monorepo (Gradle multi-project)
 
@@ -48,17 +48,25 @@ public interface ProductClient extends ProductService { }
 - Resolução via Eureka (`feign.client` + `spring-cloud-openfeign` no classpath)
 - Regras do BFF permanecem as do STEP-1: cascata em create/delete, propagação de 404, propagação de 404/422 com base no `HttpErrorInfo` do núcleo
 
-## 4. Docker + escalonamento
+> **Nota de design — BFF ≠ lib de contratos.** O BFF é o `product-composite-service`: um **serviço em runtime** que orquestra os núcleos e molda a resposta para o frontend. A lib `api` é apenas a **biblioteca de contratos** (interfaces, DTOs, exceções) — sem runtime; é o *contrato* que os núcleos **implementam** e o BFF **consome**. A herança `ProductClient extends ProductService` é suportada oficialmente pelo Spring Cloud OpenFeign ("Feign Inheritance Support").
+
+## 4. Docker + escalonamento + balanceamento de carga
 
 - Um `Dockerfile` por serviço (base JRE 17).
 - `docker-compose.yml` com o cenário completo: eureka, gateway, BFF, product, recommendation, review, MongoDB e MySQL.
 - Profile `docker` em cada `application.yml` ajustando hostnames (ex.: `app.eureka-server: eureka`, hosts dos bancos).
-- **Escalonamento**: subir múltiplas instâncias de um núcleo e observar o balanceamento pelo Eureka + Gateway:
+
+**Balanceamento de carga (ciclo completo)** — com o BFF integrado, a escala + round-robin passam a valer para a orquestração inteira, do Gateway ao núcleo:
 
 ```bash
 docker compose up -d --build
-docker compose up -d --scale product=2
-curl localhost:8080/product-composite/1 | jq '.serviceAddresses.pro'   # alterna entre instâncias
+docker compose up -d --scale product=2 --scale review=2 --scale recommendation=2
+
+# ciclo completo via Gateway — observe o round-robin no BFF e em cada núcleo
+# (escale também o BFF com --scale product-composite=2 para o serviceAddresses.cmp alternar)
+for i in $(seq 1 6); do
+  curl -s localhost:8080/product-composite/1 | jq -r '.serviceAddresses.cmp, .serviceAddresses.pro'
+done
 ```
 
 > Dica: com múltiplas instâncias locais use `server.port: 0`; o `ServiceUtil` (via `WebServerInitializedEvent`) já resolve a porta real. (Referência: seção 1.5 do STEP-1.)
