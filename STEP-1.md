@@ -162,54 +162,72 @@ String address = registration.getHost() + ":" + registration.getPort();
 - [ ] Resposta com `serviceAddress`.
 
 ### Grupo 4 — `product-composite-service` (porta 7000)
-- [ ] Bean `RestTemplate`; classe de integração implementando `ProductService`, `RecommendationService` e `ReviewService`.
-- [ ] URLs configuráveis (fase isolada): `app.product-service.host/port`, `app.recommendation-service.host/port`, `app.review-service.host/port` — defaults `localhost:7001/7002/7003`.
-- [ ] `createProduct`: cria product e, se presentes no payload, recommendations e reviews.
-- [ ] `getProduct`: 3 GETs → monta `ProductAggregate` com `ServiceAddresses`; se product retornar 404, propaga 404.
-- [ ] `deleteProduct`: deleta product + recommendations + reviews (tolerar 404 dos núcleos).
-- [ ] Tratamento de `HttpClientErrorException`: extrair `HttpErrorInfo` do corpo e relançar como `NotFoundException`/`InvalidInputException`.
-- [ ] **Na integração**: trocar para `http://product`, `http://recommendation`, `http://review` com `RestTemplate` `@LoadBalanced` (registrando no Eureka).
+> Nesta aula o composite responde com **dados mockados** (não depende dos núcleos). A integração real será implementada na próxima aula.
+
+- [ ] Endpoints `POST/GET/DELETE /product-composite` conforme contrato 1.2.
+- [ ] Classe de integração **mockada** (componente que retorna dados fixos):
+  - `getProduct(1)` → `ProductAggregate` fiel ao contrato (product + 1 recommendation + 1 review + `ServiceAddresses`).
+  - `getProduct(13)` → `NotFoundException` (404) — convenção de testes do livro.
+  - `getProduct(0)` → `InvalidInputException` (422).
+  - `createProduct` / `deleteProduct` → respondem sem chamar os núcleos (ex.: log + 202).
+- [ ] Classe de integração **real** (RestTemplate + `@LoadBalanced` + `http://product` etc.) **preparada mas desativada** (ex.: perfil `real` no `application.yml`) — ativação na próxima aula.
+- [ ] Resposta com `serviceAddress` (`cmp`) — ver 1.5.
 
 ### Grupo 5 — `spring-cloud` (eureka-server + gateway)
 - [ ] `eureka-server` (porta 8761): `@EnableEurekaServer`, `registerWithEureka: false`, `fetchRegistry: false`, dashboard em `http://localhost:8761`.
 - [ ] `gateway` (porta 8080): dependência `spring-cloud-starter-gateway` + eureka-client.
 - [ ] Rotas (via `spring.cloud.gateway.routes` no `application.yml`):
   - `/product-composite/**` → `lb://product-composite` (rota principal)
+  - `/product/**` → `lb://product` (rota de **debug** — aceite individual do grupo 1)
+  - `/review/**` → `lb://review` (rota de **debug** — aceite individual do grupo 2)
+  - `/recommendation/**` → `lb://recommendation` (rota de **debug** — aceite individual do grupo 3)
   - `/eureka/web`, `/eureka/api/**` → dashboard do Eureka via gateway (opcional)
 - [ ] Health check: expor `/actuator/health` com `show-details: ALWAYS`.
 
 ## 3. Integração final (todos os grupos)
 
 1. **Grupo 5**: subir o `eureka-server` primeiro.
-2. **Grupos 1–4**: adicionar `spring-cloud-starter-netflix-eureka-client`, nomear a app (`spring.application.name: product`, `review`, `recommendation`, `product-composite`) e apontar `eureka.client.serviceUrl.defaultZone: http://localhost:8761/eureka/`.
-3. **Grupo 4**: migrar o RestTemplate para `@LoadBalanced` + URIs `http://product` etc.
-4. **Todos**: passar a resolver o `serviceAddress` via `Registration` (ver 1.5).
-5. Validar no dashboard do Eureka (`http://localhost:8761`) as 5 instâncias **UP**.
+2. **Todos**: adicionar `spring-cloud-starter-netflix-eureka-client`, nomear a app (`spring.application.name: product`, `review`, `recommendation`, `product-composite`, `gateway`) e apontar `eureka.client.serviceUrl.defaultZone: http://localhost:8761/eureka/`.
+3. **Todos**: resolver o `serviceAddress` via `Registration` (ver 1.5).
+4. **Balanceamento de carga (todos)** — validar o Spring Cloud LoadBalancer:
+   - Cada grupo sobe uma **2ª instância** do seu serviço (`--server.port=0` ou porta alternativa).
+   - Chamadas repetidas **via Gateway** (`:8080`) devem alternar o `serviceAddress` entre as instâncias (round-robin).
+   - Núcleos são testados pelas rotas de debug (`/product/**`, `/review/**`, `/recommendation/**`); o composite (mock) pela rota `/product-composite/**`.
+5. Validar no dashboard do Eureka (`http://localhost:8761`) as apps **UP** (núcleos/composite podem aparecer 2× durante a demonstração de LB).
 
 ## 4. Roteiro de testes (curl)
 
+> Hoje cada serviço é testado **individualmente** (núcleos nas rotas de debug; composite retornando o mock). O fluxo completo composite→núcleos será validado na próxima aula.
+
 ```bash
-# 1) criar um produto composto (via composite, porta 7000)
-curl -X POST localhost:7000/product-composite \
+# --- Núcleo (ex.: product, direto na porta) ---
+curl localhost:7001/product/1
+curl localhost:7001/product/13                    # 404
+curl localhost:7001/product/0                     # 422
+
+# --- Mesmo núcleo via Gateway (rota de debug) ---
+curl localhost:8080/product/1 | jq
+
+# --- Balanceamento de carga (2 instâncias) ---
+# suba a 2ª instância com:  java -jar build/libs/*.jar --server.port=0
+for i in 1 2 3 4 5 6; do
+  curl -s localhost:8080/product/1 | jq -r '.serviceAddress'
+done                                             # alterna entre as instâncias
+
+# --- Composite (mockado) ---
+curl localhost:8080/product-composite/1 | jq      # agregado mockado fiel ao contrato
+curl localhost:8080/product-composite/13         # 404 (mock)
+curl -X POST localhost:8080/product-composite \
   -H "Content-Type: application/json" --data \
-  '{"productId":1,"name":"produto 1","weight":100,
-    "recommendations":[{"recommendationId":1,"author":"A","rate":4,"content":"ok"}],
-    "reviews":[{"reviewId":1,"author":"B","subject":"s","content":"c"}]}'
+  '{"productId":1,"name":"produto 1","weight":100}'   # 202 (mock)
 
-# 2) consultar agregado
-curl localhost:7000/product-composite/1
-
-# 3) consultar um núcleo diretamente (ex.: reviews)
-curl "localhost:7003/review?productId=1"
-
-# 4) mesmo fluxo via Gateway (porta 8080) — após a integração
-curl localhost:8080/product-composite/1 | jq
-
-# 5) deletar e conferir cascata
-curl -X DELETE localhost:8080/product-composite/1
+# --- Dashboard do Eureka ---
+open http://localhost:8761
 ```
 
-## 5. Fluxo da chamada integrada (referência)
+## 5. Fluxo da chamada integrada — alvo da próxima aula
+
+> Hoje o composite responde do **mock**; quando a integração real for ativada, o fluxo abaixo passa a valer (composite resolvendo `lb://product`, `lb://recommendation` e `lb://review` via Eureka).
 
 ```mermaid
 sequenceDiagram
@@ -231,8 +249,12 @@ sequenceDiagram
     GW-->>C: JSON agregado
 ```
 
-## 6. Critérios de aceite da aula
+## 6. Critérios de aceite — por grupo
 
-- `GET /product-composite/1` via `:8080` retorna o agregado com os 3 núcleos e `serviceAddresses` preenchidos.
-- Dashboard do Eureka com 5 serviços registrados.
-- Códigos 404/422 observados nos casos de erro do roteiro.
+| Grupo | Critérios de aceite |
+|-------|---------------------|
+| **1 – product** | `POST /product`, `GET /product/{id}`, `DELETE /product/{id}` + MongoDB; 404 (id inexistente) e 422 (id < 1, duplicado) conforme contrato; `serviceAddress` preenchido; registrado no Eureka; **LB evidenciado** (2 instâncias alternando `serviceAddress` via `:8080/product/...`) |
+| **2 – review** | `POST /review`, `GET/DELETE /review?productId=` + MySQL; 422 (`productId < 1`); lista vazia → 200; `serviceAddress`; registrado no Eureka; **LB evidenciado** via `:8080/review?productId=...` |
+| **3 – recommendation** | `POST /recommendation`, `GET/DELETE /recommendation?productId=` + MongoDB (map `rating`↔`rate`); 422 (`productId < 1`); lista vazia → 200; `serviceAddress`; registrado no Eureka; **LB evidenciado** via `:8080/recommendation?productId=...` |
+| **4 – composite** | Endpoints `POST/GET/DELETE /product-composite` retornando o **agregado mockado** fiel ao contrato; 422 (id < 1) e 404 (id 13); `serviceAddress` (`cmp`); registrado no Eureka; **LB evidenciado** via `:8080/product-composite/...` |
+| **5 – spring-cloud** | Eureka no ar com as 5 apps **UP**; Gateway com rota do composite + rotas de debug dos 3 núcleos; `/actuator/health` exposto |

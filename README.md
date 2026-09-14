@@ -56,6 +56,8 @@ flowchart LR
     classDef ext fill:#eee,stroke:#333
 ```
 
+> **Na aula de hoje** o `product-composite-service` responde com dados **mockados** — as setas `PC → núcleos` acima representam o fluxo que será implementado na próxima aula. Núcleos são testados individualmente pelas rotas de debug do Gateway.
+
 ## Distribuição dos grupos
 
 | Grupo | Repositório | Escopo | Porta | Dependências principais |
@@ -80,9 +82,9 @@ flowchart LR
 flowchart LR
     A["1. Alinhamento dos contratos<br/>(todos, ~15 min)"] --> B["2. Desenvolvimento isolado<br/>(grupos, ~60–75 min)"]
     B --> C["3. Registro no Eureka<br/>(todos, ~15 min)"]
-    C --> D["4. Composite migra para<br/>lb:// (~15 min)"]
-    D --> E["5. Testes ponta a ponta<br/>via Gateway :8080"]
-    E --> F["6. Retro + premissas<br/>do STEP-2"]
+    C --> D["4. Balanceamento de carga<br/>(2 instâncias por serviço, ~15 min)"]
+    D --> E["5. Aceite individual por grupo<br/>via Gateway :8080"]
+    E --> F["6. Retro + premissas<br/>do STEP-2 (composite real)"]
 ```
 
 ## Materiais
@@ -92,6 +94,6 @@ flowchart LR
 
 ## Critérios de entrega (por grupo)
 
-- Endpoints respondendo conforme o contrato do STEP-1 (códigos 404/422 inclusos).
-- Serviço registrado no Eureka e acessível via Gateway ao final da aula.
+- Critérios **individuais** por grupo no [STEP-1 §6](STEP-1.md#6-critérios-de-aceite--por-grupo): endpoints próprios, códigos 404/422, `serviceAddress`, registro no Eureka e **balanceamento de carga** evidenciado.
+- Composite (grupo 4): entrega o contrato **mockado** — a orquestração real dos núcleos fica para a próxima aula.
 - README do próprio repositório com instruções de execução (como subir o banco local e o serviço).

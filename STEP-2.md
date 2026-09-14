@@ -35,9 +35,9 @@ workshop-microservices/
 
 ## 3. BFF + OpenFeign
 
-O `product-composite-service` evolui para um **BFF (Backend for Frontend)**: única porta de entrada de negócio para o frontend, orquestrando os núcleos.
+O `product-composite-service` **sai do mock** do STEP-1 e evolui para um **BFF (Backend for Frontend)**: única porta de entrada de negócio para o frontend, orquestrando os núcleos.
 
-O `RestTemplate` manual é substituído por **Spring Cloud OpenFeign**, aproveitando as interfaces da lib `api` como contrato do client:
+A orquestração real é implementada com **Spring Cloud OpenFeign** (substituindo a classe mockada e o `RestTemplate` manual), aproveitando as interfaces da lib `api` como contrato do client:
 
 ```java
 @FeignClient(name = "product")
@@ -136,3 +136,5 @@ A disciplina é focada em **Microservices com Message Broker** — os próximos 
 - STEP-1 versionado nos 5 repositórios (tags por grupo facilitam o merge).
 - Docker rodando na máquina (Docker Engine + Compose plugin).
 - Contratos do STEP-1 estáveis — qualquer divergência de DTO/endpoint deve ser corrigida **antes** do merge no monorepo.
+- Aceite do STEP-1 concluído por grupo (núcleos entregues com endpoints reais; o mock do composite é substituído na própria aula 2).
+- Rota de debug removida/desativada após a validação (núcleos ficam internos, acessíveis só pelo BFF via Eureka).
