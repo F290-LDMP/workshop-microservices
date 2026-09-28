@@ -2,7 +2,9 @@
 
 > Laboratório de Desenvolvimento Multiplataforma — FATEC Antonio Brambilla
 
-Esta é a primeira parte prática do [STEP-2](STEP-2.md). Partimos dos contratos do [STEP-1](STEP-1.md) para preparar **um novo repositório**, chamado `workshop-microservices`, que receberá os projetos das cinco equipes. Este repositório de instruções continua sendo o material da disciplina.
+Esta é a primeira parte prática do [STEP-2](STEP-2.md). Partimos dos contratos do [STEP-1](STEP-1.md) para preparar o monorepo `workshop-microservices`, que receberá os projetos das cinco equipes. As instruções ficam em `docs/`, junto à base Gradle deste repositório.
+
+> A estrutura inicial já está disponível na raiz. A seção 1 documenta como recriá-la; quem clonou esta base pode seguir para a implementação das libs nas seções 2 e 3. Execute os comandos Gradle na raiz do repositório, não dentro de `docs/`.
 
 **Entrega desta etapa:** build Gradle multi-project, bibliotecas `util` e `api` implementadas e diretórios `spring-cloud` e `microservices` reservados para os alunos. Primeiro detalhamos `util`; depois, `api`. A integração real com OpenFeign, Docker e o balanceamento continuam no roteiro geral do STEP-2.
 
@@ -25,7 +27,7 @@ Aqui, **orquestrar os repositórios** significa reunir os códigos em um único 
 
 | Ferramenta | Versão adotada |
 |------------|----------------|
-| Java | 17; os exemplos também podem ser compilados com JDK 21, gerando bytecode 17 |
+| Java | 17; compilação e testes usam a toolchain Java 17 |
 | Gradle Wrapper | 8.14.3 |
 | Spring Boot / BOM | 3.0.4 |
 | Spring Cloud, quando os serviços forem incorporados | 2022.0.2 |
@@ -42,6 +44,7 @@ Os quatro serviços de negócio usam **Spring MVC**, conforme o STEP-1. O Gatewa
 workshop-microservices/
 ├── .gitignore
 ├── README.md
+├── docs/                      # roteiros do workshop
 ├── settings.gradle
 ├── build.gradle
 ├── gradlew
@@ -63,7 +66,7 @@ workshop-microservices/
 
 Git não versiona diretórios vazios. Os `.gitkeep` são marcadores sem conteúdo; nesta entrega essas duas pastas **não contêm projetos**. As libs são JARs comuns, sem classe `main`, servidor HTTP ou `application.yml`.
 
-Em uma pasta diferente da que contém este material, execute:
+Para recriar a base do zero em outro local, execute:
 
 ```bash
 mkdir workshop-microservices
@@ -80,7 +83,7 @@ mkdir -p spring-cloud microservices
 touch spring-cloud/.gitkeep microservices/.gitkeep
 ```
 
-Todos os caminhos de arquivos e comandos seguintes são relativos à raiz **desse novo repositório**.
+Todos os caminhos de arquivos e comandos seguintes são relativos à **raiz do monorepo**, um nível acima de `docs/`.
 
 **Arquivo: `.gitignore`**
 
@@ -129,8 +132,9 @@ allprojects {
 subprojects {
     plugins.withId('java') {
         java {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(17)
+            }
         }
         tasks.withType(JavaCompile).configureEach {
             options.encoding = 'UTF-8'
@@ -143,6 +147,17 @@ subprojects {
 ```
 
 ### 1.4 Gradle Wrapper e primeiro commit
+
+Além da toolchain de compilação, fixe a JVM que executa o Gradle para evitar que um Java mais recente no terminal cause erros como `Unsupported class file major version 69`.
+
+**Arquivo: `gradle/gradle-daemon-jvm.properties`**
+
+```properties
+toolchainVersion=17
+```
+
+O Gradle selecionará um JDK 17 instalado localmente. A máquina deve ter esse JDK disponível; esta base não configura download automático de Java. Para gerar o Wrapper pela primeira vez, execute o Gradle com JDK 17 selecionado no terminal.
+
 
 Depois de criar os arquivos Gradle das duas libs nas seções 2 e 3, gere o Wrapper a partir de uma instalação local do Gradle 8.14.3:
 
@@ -1287,7 +1302,7 @@ Repita criação, consulta e exclusão para review/recommendation usando os payl
 
 **Base compartilhada — entrega atual:**
 
-- [ ] Novo repositório `workshop-microservices`, separado do material de instruções.
+- [ ] Monorepo `workshop-microservices` com material de instruções em `docs/`.
 - [ ] Gradle Wrapper versionado e build centralizado.
 - [ ] Apenas `api` e `util` incluídos no build inicial.
 - [ ] `spring-cloud` e `microservices` com somente `.gitkeep`, sem implementações fornecidas.
@@ -1309,7 +1324,7 @@ Repita criação, consulta e exclusão para review/recommendation usando os payl
 
 ## 8. Referências do workshop
 
-- [README](README.md): objetivos, distribuição das equipes e convenções comuns.
+- [README](../README.md): estrutura da base, pré-requisitos, comandos de verificação e convenções comuns.
 - [STEP-1](STEP-1.md): contratos, entidades de persistência, tarefas por equipe e critérios de aceite.
 - [STEP-2](STEP-2.md): arquitetura alvo, integração com OpenFeign, Docker e balanceamento de carga.
 

@@ -1,0 +1,8 @@
+plugins { id 'java-library' }
+
+dependencies {
+    api platform("org.springframework.boot:spring-boot-dependencies:${rootProject.springBootVersion}")
+    api 'org.springframework:spring-web'
+    api "io.swagger.core.v3:swagger-annotations-jakarta:${rootProject.swaggerAnnotationsVersion}"
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

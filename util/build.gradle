@@ -1,0 +1,9 @@
+plugins { id 'java-library' }
+
+dependencies {
+    api platform("org.springframework.boot:spring-boot-dependencies:${rootProject.springBootVersion}")
+    api project(':api')
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation "org.springdoc:springdoc-openapi-starter-common:${rootProject.springdocVersion}"
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

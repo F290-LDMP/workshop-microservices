@@ -1,98 +1,81 @@
-# Workshop: Microservices com Spring Boot 3 e Spring Cloud
+# workshop-microservices
 
-> Laboratório de Desenvolvimento Multiplataforma — FATEC Antonio Brambilla
+Base Gradle multi-project para o workshop de microservices da FATEC Araras.
 
-## Objetivos de aprendizagem
+## Pré-requisitos
 
-- Construir um conjunto de microservices cooperantes (3 serviços de núcleo + 1 serviço de composição).
-- Aplicar persistência poliglota: MongoDB (documento) para product/recommendation e MySQL (relacional) para review.
-- Implementar service discovery com Netflix Eureka e edge server com Spring Cloud Gateway.
-- Definir e respeitar contratos de API entre equipes que desenvolvem em repositórios separados.
-- (Step 2) Integrar os serviços em um monorepo com BFF, OpenFeign e Docker, escalando instâncias e demonstrando o **balanceamento de carga** no ciclo completo.
+- JDK 17, com `JAVA_HOME` apontando para sua instalação. O Gradle usa a toolchain Java 17 para compilação e testes.
+- Acesso à internet na primeira execução para baixar o Gradle e as dependências.
+- Gradle 8.14.3 fornecido pelo Wrapper; não é necessário instalar Gradle.
 
-## O system landscape
+## Estrutura
 
-Os 5 grupos construirão, isoladamente, partes deste cenário:
-
-```mermaid
-flowchart LR
-    C["Cliente<br/>(curl / Postman / Swagger)"]:::ext
-
-    subgraph G5["Grupo 5 — spring-cloud"]
-        GW["Gateway (Edge Server)<br/>porta 8080"]
-        EUR["Eureka Server<br/>(Discovery) porta 8761"]
-    end
-
-    subgraph G4["Grupo 4 — composite"]
-        PC["product-composite-service<br/>porta 7000"]
-    end
-
-    subgraph G1["Grupo 1 — product"]
-        P["product-service<br/>porta 7001"]
-        M1[("MongoDB<br/>products")]
-    end
-
-    subgraph G3["Grupo 3 — recommendation"]
-        R["recommendation-service<br/>porta 7002"]
-        M2[("MongoDB<br/>recommendations")]
-    end
-
-    subgraph G2["Grupo 2 — review"]
-        V["review-service<br/>porta 7003"]
-        S[("MySQL<br/>reviews")]
-    end
-
-    C --> GW --> PC
-    PC --> P
-    PC --> R
-    PC --> V
-    P --> M1
-    R --> M2
-    V --> S
-    GW --> EUR
-
-    classDef ext fill:#eee,stroke:#333
+```text
+workshop-microservices/
+├── .gitignore
+├── README.md
+├── docs/
+│   ├── STEP-1.md
+│   ├── STEP-2-LIBS.md
+│   └── STEP-2.md
+├── settings.gradle
+├── build.gradle
+├── gradlew
+├── gradlew.bat
+├── gradle/
+│   ├── gradle-daemon-jvm.properties
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
+├── util/
+│   ├── build.gradle
+│   └── src/main/java/br/com/fatecararas/util/.gitkeep
+├── api/
+│   ├── build.gradle
+│   └── src/main/java/br/com/fatecararas/api/.gitkeep
+├── spring-cloud/.gitkeep
+└── microservices/.gitkeep
 ```
 
-> **Na aula de hoje** o `product-composite-service` responde com dados **mockados** — as setas `PC → núcleos` acima representam o fluxo que será implementado na próxima aula. Núcleos são testados individualmente; **balanceamento de carga** e ciclo completo ficam para o STEP-2.
+- `util`: diretório reservado aos utilitários compartilhados e ao tratamento de erros; depende de `api`.
+- `api`: diretório reservado aos DTOs, às interfaces e às exceções dos contratos.
+- `spring-cloud`: receberá os projetos Eureka e Gateway da equipe responsável.
+- `microservices`: receberá product, review, recommendation e composite.
 
-## Distribuição dos grupos
+Os arquivos `.gitkeep` permitem versionar os diretórios ainda vazios. Esta base não contém classes Java, aplicações ou testes. As bibliotecas usam `java-library` e geram JARs comuns; não possuem `bootRun`.
 
-| Grupo | Repositório | Escopo | Porta | Dependências principais |
-|-------|-------------|--------|-------|--------------------------|
-| 1 | `product-service` | API de produtos + persistência MongoDB | 7001 | web, spring-data-mongodb |
-| 2 | `review-service` | API de reviews + persistência MySQL (JPA) | 7003 | web, spring-data-jpa, driver MySQL |
-| 3 | `recommendation-service` | API de recomendações + persistência MongoDB | 7002 | web, spring-data-mongodb |
-| 4 | `product-composite-service` | BFF/orquestrador — **mock** na aula 1; integração real e balanceamento no Step 2 | 7000 | web |
-| 5 | `spring-cloud` | `eureka-server` (Discovery) + `gateway` (Edge Server) | 8761 / 8080 | netflix-eureka-server, spring-cloud-gateway |
+## Documentação do workshop
 
-## Convenções comuns (obrigatórias para todos)
+- [STEP-1 — APIs, Eureka e Gateway](docs/STEP-1.md): contratos e tarefas das equipes.
+- [STEP-2 — Bibliotecas compartilhadas](docs/STEP-2-LIBS.md): preparação da base, implementação de `util` e `api`, tratamento de erros e Swagger OpenAPI.
+- [STEP-2 — Integração dos serviços](docs/STEP-2.md): OpenFeign, Docker e balanceamento de carga.
 
-- **Java 17**, **Spring Boot 3.x**, **Spring Cloud 2022.x**, **Gradle** (projetos gerados no [Spring Initializr](https://start.spring.io)).
-- Pacotes raiz no padrão deste repositório: `br.com.fatecararas.api.*` (contratos) e `br.com.fatecararas.microservices.*` / `br.com.fatecararas.springcloud.*` (implementações). Manter os mesmos pacotes facilita o merge no monorepo do Step 2.
-- Cada serviço de núcleo retorna o campo `serviceAddress` informando a instância que respondeu — resolvido com API moderna do Spring (ver STEP-1, seção "Endereço da instância").
-- Erros seguem o contrato comum: `NotFoundException` → **HTTP 404**, `InvalidInputException` → **HTTP 422**, corpo no formato `HttpErrorInfo`.
-- Persistência **local**: o banco (MongoDB/MySQL) pode rodar como o aluno preferir (instalação local, Docker, VM). Apenas a connection string entra no `application.yml`.
+## Java usado pelo Gradle
 
-## Cronograma sugerido da aula
+`gradle/gradle-daemon-jvm.properties` fixa a JVM do daemon em Java 17, independentemente da versão apontada por `JAVA_HOME`. É necessário ter um JDK 17 instalado e detectável pelo Gradle; não há download automático de JDK configurado.
 
-```mermaid
-flowchart LR
-    A["1. Alinhamento dos contratos<br/>(todos, ~15 min)"] --> B["2. Desenvolvimento isolado<br/>(grupos, ~60–75 min)"]
-    B --> C["3. Registro no Eureka<br/>(todos, ~15 min)"]
-    C --> D["4. Aceite individual por grupo<br/>(endpoints + dashboard)"]
-    D --> E["5. Retro + premissas do STEP-2<br/>(composite real + balanceamento)"]
+A toolchain em `build.gradle` também seleciona Java 17 para compilação e testes. Essas configurações têm papéis distintos: apenas a toolchain não impede que o próprio Gradle seja iniciado com uma JVM incompatível.
+
+Se precisar selecionar o JDK no terminal com SDKMAN, execute `sdk use java <identificador-do-jdk-17-instalado>`. No IntelliJ, configure o Project SDK e o Gradle JVM para JDK 17.
+
+## Verificação da base
+
+Execute na raiz do repositório:
+
+```bash
+./gradlew --version
+./gradlew projects
+./gradlew clean build
 ```
 
-## Materiais
+No Windows, use `gradlew.bat` no lugar de `./gradlew`. Se necessário, no Linux/macOS restaure a permissão com `chmod +x gradlew`.
 
-- [STEP-1.md](STEP-1.md) — instruções completas desta aula: contratos (DTOs, interfaces, entidades, exceções), tarefas por grupo, integração final e roteiro de testes.
-- [STEP-2-LIBS.md](STEP-2-LIBS.md) — roteiro prático para criar o novo monorepo: build Gradle, primeiro `util`, depois `api`, tratamento global de erros e Swagger OpenAPI; pastas dos serviços reservadas para as equipes.
-- [STEP-2.md](STEP-2.md) — visão geral da integração posterior: BFF com OpenFeign, Docker e escalonamento.
+O build inicial inclui somente `api` e `util`. Tarefas de compilação e testes podem indicar `NO-SOURCE`, pois o código será implementado durante o workshop. Um build bem-sucedido nesta fase valida a estrutura, não o comportamento dos futuros serviços.
 
-## Critérios de entrega (por grupo)
+## Convenções para as próximas etapas
 
-- Critérios **individuais** por grupo no [STEP-1 §6](STEP-1.md#6-critérios-de-aceite--por-grupo): endpoints próprios, códigos 404/422, `serviceAddress` e registro no Eureka.
-- Composite (grupo 4): entrega o contrato **mockado** — orquestração real dos núcleos e **balanceamento de carga** ficam para o STEP-2.
-- Acessibilidade via Gateway (rota do composite + rotas de debug opcionais).
-- README do próprio repositório com instruções de execução (como subir o banco local e o serviço).
+- Pacote raiz e grupo Gradle: `br.com.fatecararas`.
+- Versões alinhadas ao roteiro: Spring Boot 3.0.4, Spring Cloud 2022.0.2 e springdoc 2.0.2.
+- Implemente as libs nos caminhos já preparados.
+- Incorpore os serviços nos respectivos diretórios e inclua-os explicitamente em `settings.gradle` somente quando seus projetos estiverem presentes.
+- Use o Wrapper da raiz para todos os módulos.
