@@ -69,7 +69,7 @@ flowchart LR
 ## Convenções comuns (obrigatórias para todos)
 
 - **Java 17**, **Spring Boot 3.x**, **Spring Cloud 2022.x**, **Gradle** (projetos gerados no [Spring Initializr](https://start.spring.io)).
-- Pacotes raiz no padrão do livro: `se.magnus.api.*` (contratos) e `se.magnus.microservices.*` / `se.magnus.springcloud.*` (implementações). Manter os mesmos pacotes facilita o merge no monorepo do Step 2.
+- Pacotes raiz no padrão deste repositório: `br.com.fatecararas.api.*` (contratos) e `br.com.fatecararas.microservices.*` / `br.com.fatecararas.springcloud.*` (implementações). Manter os mesmos pacotes facilita o merge no monorepo do Step 2.
 - Cada serviço de núcleo retorna o campo `serviceAddress` informando a instância que respondeu — resolvido com API moderna do Spring (ver STEP-1, seção "Endereço da instância").
 - Erros seguem o contrato comum: `NotFoundException` → **HTTP 404**, `InvalidInputException` → **HTTP 422**, corpo no formato `HttpErrorInfo`.
 - Persistência **local**: o banco (MongoDB/MySQL) pode rodar como o aluno preferir (instalação local, Docker, VM). Apenas a connection string entra no `application.yml`.
@@ -87,7 +87,8 @@ flowchart LR
 ## Materiais
 
 - [STEP-1.md](STEP-1.md) — instruções completas desta aula: contratos (DTOs, interfaces, entidades, exceções), tarefas por grupo, integração final e roteiro de testes.
-- [STEP-2.md](STEP-2.md) — descrição parcial da próxima aula: monorepo, libs `api`/`util`, BFF com OpenFeign, Docker e escalonamento.
+- [STEP-2-LIBS.md](STEP-2-LIBS.md) — roteiro prático para criar o novo monorepo: build Gradle, primeiro `util`, depois `api`, tratamento global de erros e Swagger OpenAPI; pastas dos serviços reservadas para as equipes.
+- [STEP-2.md](STEP-2.md) — visão geral da integração posterior: BFF com OpenFeign, Docker e escalonamento.
 
 ## Critérios de entrega (por grupo)
 

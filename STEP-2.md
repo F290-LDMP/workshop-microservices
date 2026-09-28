@@ -1,10 +1,12 @@
 # STEP 2 — Monorepo + BFF com OpenFeign + Docker (premissa da próxima aula)
 
-> ⚠️ **Fora do escopo da aula atual.** Este documento descreve, parcialmente, o que faremos na próxima aula: consolidar os 5 repositórios em um monorepo, **fechar o ciclo composite→núcleos** (BFF com OpenFeign), demonstrar o **balanceamento de carga** no ciclo completo e dockerizar o cenário com possibilidade de escala.
+> **Comece pelo [roteiro de preparação do monorepo e das libs](STEP-2-LIBS.md).** Ele detalha a criação do novo repositório, primeiro `util` e depois `api`, o handler global e o Swagger OpenAPI. Na entrega inicial, `spring-cloud` e `microservices` ficam apenas com `.gitkeep`, para receber os projetos dos alunos.
+
+Este documento apresenta a arquitetura alvo e as etapas posteriores: incorporar os cinco repositórios, **fechar o ciclo composite→núcleos** (BFF com OpenFeign), demonstrar o **balanceamento de carga** e dockerizar o cenário com possibilidade de escala.
 
 ## 1. Monorepo (Gradle multi-project)
 
-Os 5 repositórios do STEP-1 serão unidos:
+Após a preparação das libs e a incorporação dos projetos pelas equipes, os cinco repositórios do STEP-1 formarão a estrutura abaixo. O `docker-compose.yml` será criado na etapa de Docker:
 
 ```
 workshop-microservices/
@@ -24,14 +26,19 @@ workshop-microservices/
 
 ## 2. Libs compartilhadas
 
+A implementação completa está no [STEP-2-LIBS](STEP-2-LIBS.md), na ordem `util` → `api`. O resumo abaixo descreve o papel de cada biblioteca.
+
 **`api`** — os contratos do STEP-1 (seções 1.1, 1.2 e 1.4) saem da duplicação entre repositórios e viram dependência única:
 - Interfaces: `ProductService`, `RecommendationService`, `ReviewService`, `ProductCompositeService`
 - DTOs: `Product`, `Recommendation`, `Review`, `ProductAggregate`, `RecommendationSummary`, `ReviewSummary`, `ServiceAddresses`
 - Exceções: `NotFoundException`, `InvalidInputException`
 
 **`util`** — código compartilhado (base: `dev.sdras.utils.http` do MicroservicesPlayground):
-- `ServiceUtil`: resolve host/porta via `WebServerInitializedEvent` (standalone) ou `Registration` (com Eureka) — substitui o `@Value("${server.port}")` do livro com API moderna do Spring
-- `HttpErrorInfo` + `GlobalControllerExceptionHandler` (`@ControllerAdvice` mapeando `NotFoundException`→404, `InvalidInputException`→422)
+- `ServiceUtil`: resolve host/porta via `WebServerInitializedEvent` (standalone) ou `Registration` (com Eureka) — captura a porta efetiva do servidor com a API de eventos do Spring
+- `HttpErrorInfo` + `GlobalControllerExceptionHandler` (`@RestControllerAdvice` MVC mapeando `NotFoundException`→404, `InvalidInputException`→422 e erros de leitura da requisição→400)
+- `OpenApiConfiguration`: metadados por aplicação e schema compartilhado de erro. Interfaces e DTOs em `api` recebem as anotações Swagger; o starter de UI entra nos serviços MVC.
+
+As entidades MongoDB/JPA e os repositories permanecem nos respectivos serviços. A dependência é `util` → `api`, sem ciclo; o Gateway reativo não recebe a lib `util` MVC.
 
 ## 3. BFF + OpenFeign
 
@@ -133,7 +140,7 @@ flowchart LR
 
 ## 6. O que vem depois (alinhamento com a disciplina)
 
-A disciplina é focada em **Microservices com Message Broker** — os próximos passos naturais (capítulos do livro):
+A disciplina é focada em **Microservices com Message Broker** — os próximos passos previstos para o workshop são:
 
 1. **Spring Cloud Stream + Kafka/RabbitMQ**: `createProduct`/`deleteProduct` passam a publicar **eventos**; os núcleos consomem de tópicos de forma assíncrona (comunicação event-driven, complementar ao GET síncrono).
 2. **Resilience4j**: circuit breaker, retry e fallback no BFF.

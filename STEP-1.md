@@ -41,28 +41,28 @@ Instruções da atividade de hoje. Os grupos 1–4 implementam as APIs abaixo em
 
 ### 1.2 Interfaces REST (assinaturas)
 
-**ProductService** — `se.magnus.api.core.product`
+**ProductService** — `br.com.fatecararas.api.core.product`
 | Método | Endpoint | Retorno |
 |--------|----------|---------|
 | `createProduct(Product)` | `POST /product` | `Product` |
 | `getProduct(int productId)` | `GET /product/{productId}` | `Product` |
 | `deleteProduct(int productId)` | `DELETE /product/{productId}` | `void` |
 
-**RecommendationService** — `se.magnus.api.core.recommendation`
+**RecommendationService** — `br.com.fatecararas.api.core.recommendation`
 | Método | Endpoint | Retorno |
 |--------|----------|---------|
 | `createRecommendation(Recommendation)` | `POST /recommendation` | `Recommendation` |
 | `getRecommendations(int productId)` | `GET /recommendation?productId=` | `List<Recommendation>` |
 | `deleteRecommendations(int productId)` | `DELETE /recommendation?productId=` | `void` |
 
-**ReviewService** — `se.magnus.api.core.review`
+**ReviewService** — `br.com.fatecararas.api.core.review`
 | Método | Endpoint | Retorno |
 |--------|----------|---------|
 | `createReview(Review)` | `POST /review` | `Review` |
 | `getReviews(int productId)` | `GET /review?productId=` | `List<Review>` |
 | `deleteReviews(int productId)` | `DELETE /review?productId=` | `void` |
 
-**ProductCompositeService** — `se.magnus.api.composite.product`
+**ProductCompositeService** — `br.com.fatecararas.api.composite.product`
 | Método | Endpoint | Retorno |
 |--------|----------|---------|
 | `createProduct(ProductAggregate)` | `POST /product-composite` | `void` |
@@ -104,7 +104,7 @@ Corpo de erro (`HttpErrorInfo`):
 
 ### 1.5 Endereço da instância (`serviceAddress`)
 
-Não use o `@Value("${server.port}")` do livro. Implementação de referência (`ServiceUtil`, disponível em `dev.sdras.utils.http` — será extraída para a lib `util` no STEP-2):
+Não use `@Value("${server.port}")` para identificar a porta efetiva do servidor. Implementação de referência (`ServiceUtil`, disponível em `dev.sdras.utils.http` — será extraída para a lib `util` no STEP-2):
 
 ```java
 @Component
@@ -167,7 +167,7 @@ String address = registration.getHost() + ":" + registration.getPort();
 - [ ] Endpoints `POST/GET/DELETE /product-composite` conforme contrato 1.2.
 - [ ] Classe de integração **mockada** (componente que retorna dados fixos):
   - `getProduct(1)` → `ProductAggregate` fiel ao contrato (product + 1 recommendation + 1 review + `ServiceAddresses`).
-  - `getProduct(13)` → `NotFoundException` (404) — convenção de testes do livro.
+  - `getProduct(13)` → `NotFoundException` (404) — convenção de testes deste workshop.
   - `getProduct(0)` → `InvalidInputException` (422).
   - `createProduct` / `deleteProduct` → respondem sem chamar os núcleos (ex.: log + 202).
 - [ ] Classe de integração **real** (RestTemplate + `@LoadBalanced` + `http://product` etc.) **preparada mas desativada** (ex.: perfil `real` no `application.yml`) — ativação na próxima aula.
