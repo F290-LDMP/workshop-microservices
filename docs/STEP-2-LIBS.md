@@ -94,7 +94,15 @@ Todos os caminhos de arquivos e comandos seguintes são relativos à **raiz do m
 *.iml
 .DS_Store
 .env
+
+# Eclipse / Buildship (o build Gradle não usa esses arquivos)
+.classpath
+.project
+.settings/
+bin/
 ```
+
+As últimas entradas evitam que o Eclipse/Buildship ou um Language Server Java versionem metadados de IDE e a saída de compilador do IDE (`bin/`), que é diferente de `build/`, usada pelo Gradle.
 
 **Arquivo: `settings.gradle`**
 

@@ -4,3 +4,9 @@
 *.iml
 .DS_Store
 .env
+
+# Eclipse / Buildship (o build Gradle não usa esses arquivos)
+.classpath
+.project
+.settings/
+bin/

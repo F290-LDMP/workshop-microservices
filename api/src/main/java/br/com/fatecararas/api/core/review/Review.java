@@ -1,0 +1,39 @@
+package br.com.fatecararas.api.core.review;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "Review")
+public class Review {
+    @Schema(description = "Identificador do produto", example = "1", minimum = "1")
+    private int productId;
+    private int reviewId;
+    private String author;
+    private String subject;
+    private String content;
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
+    private String serviceAddress;
+
+    public Review() { }
+
+    public Review(int productId, int reviewId, String author, String subject, String content, String serviceAddress) {
+        this.productId = productId;
+        this.reviewId = reviewId;
+        this.author = author;
+        this.subject = subject;
+        this.content = content;
+        this.serviceAddress = serviceAddress;
+    }
+
+    public int getProductId() { return productId; }
+    public void setProductId(int productId) { this.productId = productId; }
+    public int getReviewId() { return reviewId; }
+    public void setReviewId(int reviewId) { this.reviewId = reviewId; }
+    public String getAuthor() { return author; }
+    public void setAuthor(String author) { this.author = author; }
+    public String getSubject() { return subject; }
+    public void setSubject(String subject) { this.subject = subject; }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+    public String getServiceAddress() { return serviceAddress; }
+    public void setServiceAddress(String serviceAddress) { this.serviceAddress = serviceAddress; }
+}
