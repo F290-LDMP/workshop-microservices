@@ -27,22 +27,32 @@ workshop-microservices/
 │   └── wrapper/
 │       ├── gradle-wrapper.jar
 │       └── gradle-wrapper.properties
-├── util/
-│   ├── build.gradle
-│   └── src/main/java/br/com/fatecararas/util/.gitkeep
 ├── api/
 │   ├── build.gradle
-│   └── src/main/java/br/com/fatecararas/api/.gitkeep
+│   └── src/main/java/br/com/fatecararas/api/
+│       ├── exceptions/                  # NotFoundException, InvalidInputException
+│       ├── core/product/                # Product, ProductService
+│       ├── core/recommendation/         # Recommendation, RecommendationService
+│       ├── core/review/                 # Review, ReviewService
+│       └── composite/product/           # ProductAggregate, RecommendationSummary,
+│                                         # ReviewSummary, ServiceAddresses,
+│                                         # ProductCompositeService
+├── util/
+│   ├── build.gradle
+│   └── src/main/java/br/com/fatecararas/util/
+│       ├── http/                        # ServiceUtil, HttpErrorInfo,
+│       │                                # GlobalControllerExceptionHandler
+│       └── openapi/                     # OpenApiConfiguration
 ├── spring-cloud/.gitkeep
 └── microservices/.gitkeep
 ```
 
-- `util`: diretório reservado aos utilitários compartilhados e ao tratamento de erros; depende de `api`.
-- `api`: diretório reservado aos DTOs, às interfaces e às exceções dos contratos.
-- `spring-cloud`: receberá os projetos Eureka e Gateway da equipe responsável.
-- `microservices`: receberá product, review, recommendation e composite.
+- `api`: contratos do workshop — 7 DTOs, 2 exceções de negócio e as 4 interfaces REST com anotações Swagger OpenAPI. Não depende de `util`; expõe `spring-web` e `swagger-annotations-jakarta` via configuração `api`.
+- `util`: utilitários compartilhados — identificação da instância (`ServiceUtil`), formato de erro (`HttpErrorInfo`), tratamento global (`GlobalControllerExceptionHandler`) e metadados do OpenAPI (`OpenApiConfiguration`). Depende de `api`, sem ciclo.
+- `spring-cloud`: receberá os projetos Eureka e Gateway da equipe responsável; contém apenas `.gitkeep`.
+- `microservices`: receberá product, review, recommendation e composite; contém apenas `.gitkeep`.
 
-Os arquivos `.gitkeep` permitem versionar os diretórios ainda vazios. Esta base não contém classes Java, aplicações ou testes. As bibliotecas usam `java-library` e geram JARs comuns; não possuem `bootRun`.
+As bibliotecas usam `java-library` e geram JARs comuns: não possuem classe `main`, servidor HTTP, `application.yml` nem `bootRun`. O código dos serviços ainda não foi incorporado — as libs são a entrega atual desta etapa. Os `.gitkeep` restantes existem apenas para versionar `spring-cloud/` e `microservices/`, que ainda estão vazios.
 
 ## Documentação do workshop
 
@@ -70,12 +80,53 @@ Execute na raiz do repositório:
 
 No Windows, use `gradlew.bat` no lugar de `./gradlew`. Se necessário, no Linux/macOS restaure a permissão com `chmod +x gradlew`.
 
-O build inicial inclui somente `api` e `util`. Tarefas de compilação e testes podem indicar `NO-SOURCE`, pois o código será implementado durante o workshop. Um build bem-sucedido nesta fase valida a estrutura, não o comportamento dos futuros serviços.
+O build inclui somente `api` e `util`. As duas libs compilam de verdade: `compileJava` executa e gera `api/build/libs/api-1.0.0-SNAPSHOT.jar` (13 classes) e `util/build/libs/util-1.0.0-SNAPSHOT.jar` (4 classes). Apenas `test` permanece `NO-SOURCE`, pois as libs não têm testes próprios; validar o comportamento HTTP depende da incorporação dos controllers pelos serviços.
+
+Saída real resumida dos dois primeiros comandos:
+
+```text
+$ ./gradlew --version
+Gradle 8.14.3
+Launcher JVM:  25.0.2 (Amazon.com Inc. 25.0.2+10-LTS)
+Daemon JVM:    Compatible with Java 17, any vendor, nativeImageCapable=false (from gradle/gradle-daemon-jvm.properties)
+
+$ ./gradlew projects
+Root project 'workshop-microservices'
++--- Project ':api'
+\--- Project ':util'
+```
+
+O `Launcher JVM` é a JVM do seu terminal e pode ser mais recente; o `Daemon JVM` deve indicar Java 17, comprovando que `gradle/gradle-daemon-jvm.properties` está em uso.
+
+## Uso das libs
+
+Ao incorporar um serviço MVC, adicione as duas libs ao `build.gradle` do projeto:
+
+```groovy
+implementation project(':api')
+implementation project(':util')
+implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${rootProject.springdocVersion}"
+```
+
+O starter `webmvc-ui` pertence à aplicação: as libs sozinhas não publicam `/v3/api-docs` nem `/swagger-ui.html`. Não adicione `util` ao Gateway, que é reativo.
+
+O component scan padrão do serviço não encontra `br.com.fatecararas.util...`. Registre os componentes compartilhados na classe de aplicação:
+
+```java
+import org.springframework.context.annotation.Import;
+import br.com.fatecararas.util.http.GlobalControllerExceptionHandler;
+import br.com.fatecararas.util.http.ServiceUtil;
+import br.com.fatecararas.util.openapi.OpenApiConfiguration;
+
+@Import({ServiceUtil.class, GlobalControllerExceptionHandler.class, OpenApiConfiguration.class})
+```
+
+Implemente as interfaces de `api` nos controllers (`ProductService`, `ReviewService`, `RecommendationService`, `ProductCompositeService`) sem repetir `@GetMapping`/`@PostMapping`/`@DeleteMapping`. O detalhamento está nas seções 4 e 5 do [STEP-2-LIBS](docs/STEP-2-LIBS.md), incluindo o `application.yml` do springdoc e as portas do Swagger UI de cada serviço.
 
 ## Convenções para as próximas etapas
 
 - Pacote raiz e grupo Gradle: `br.com.fatecararas`.
 - Versões alinhadas ao roteiro: Spring Boot 3.0.4, Spring Cloud 2022.0.2 e springdoc 2.0.2.
-- Implemente as libs nos caminhos já preparados.
+- As libs `api` e `util` já estão implementadas e versionadas; evite duplicar DTOs, interfaces, exceções ou o handler dentro dos serviços.
 - Incorpore os serviços nos respectivos diretórios e inclua-os explicitamente em `settings.gradle` somente quando seus projetos estiverem presentes.
 - Use o Wrapper da raiz para todos os módulos.

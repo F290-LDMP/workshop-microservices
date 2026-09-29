@@ -10,7 +10,7 @@ Após a preparação das libs e a incorporação dos projetos pelas equipes, os 
 
 ```
 workshop-microservices/
-├── settings.gradle            # include 'api', 'util', microservices/*, spring-cloud/*
+├── settings.gradle            # include explícito de 'api', 'util' e de cada serviço quando presente
 ├── api/                       # lib: contratos (interfaces REST, DTOs, exceções)
 ├── util/                      # lib: utilitários compartilhados
 ├── microservices/
@@ -33,8 +33,8 @@ A implementação completa está no [STEP-2-LIBS](STEP-2-LIBS.md), na ordem `uti
 - DTOs: `Product`, `Recommendation`, `Review`, `ProductAggregate`, `RecommendationSummary`, `ReviewSummary`, `ServiceAddresses`
 - Exceções: `NotFoundException`, `InvalidInputException`
 
-**`util`** — código compartilhado (base: `dev.sdras.utils.http` do MicroservicesPlayground):
-- `ServiceUtil`: resolve host/porta via `WebServerInitializedEvent` (standalone) ou `Registration` (com Eureka) — captura a porta efetiva do servidor com a API de eventos do Spring
+**`util`** — código compartilhado, extraído do `ServiceUtil` do STEP-1, agora em `br.com.fatecararas.util.http`:
+- `ServiceUtil`: captura a porta efetiva do servidor via `WebServerInitializedEvent` e o IP com `InetAddress`, ignorando eventos de contexto filho. Não usa Eureka nem `Registration`; a resolução de host/porta via `Registration` da seção 1.5 do STEP-1 permanece uma alternativa do próprio serviço, não da lib.
 - `HttpErrorInfo` + `GlobalControllerExceptionHandler` (`@RestControllerAdvice` MVC mapeando `NotFoundException`→404, `InvalidInputException`→422 e erros de leitura da requisição→400)
 - `OpenApiConfiguration`: metadados por aplicação e schema compartilhado de erro. Interfaces e DTOs em `api` recebem as anotações Swagger; o starter de UI entra nos serviços MVC.
 

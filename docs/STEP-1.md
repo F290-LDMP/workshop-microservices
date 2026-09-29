@@ -10,17 +10,17 @@ Instruções da atividade de hoje. Os grupos 1–4 implementam as APIs abaixo em
 
 **Product**
 ```json
-{ "productId": 1, "name": "string", "weight": 100, "serviceAddress": "host:port" }
+{ "productId": 1, "name": "string", "weight": 100, "serviceAddress": "http://host:port" }
 ```
 
 **Recommendation**
 ```json
-{ "productId": 1, "recommendationId": 1, "author": "string", "rate": 4, "content": "string", "serviceAddress": "host:port" }
+{ "productId": 1, "recommendationId": 1, "author": "string", "rate": 4, "content": "string", "serviceAddress": "http://host:port" }
 ```
 
 **Review**
 ```json
-{ "productId": 1, "reviewId": 1, "author": "string", "subject": "string", "content": "string", "serviceAddress": "host:port" }
+{ "productId": 1, "reviewId": 1, "author": "string", "subject": "string", "content": "string", "serviceAddress": "http://host:port" }
 ```
 
 **ProductAggregate** (resposta do composite)
@@ -31,7 +31,7 @@ Instruções da atividade de hoje. Os grupos 1–4 implementam as APIs abaixo em
   "weight": 100,
   "recommendations": [ { "recommendationId": 1, "author": "string", "rate": 4, "content": "string" } ],
   "reviews":       [ { "reviewId": 1, "author": "string", "subject": "string", "content": "string" } ],
-  "serviceAddresses": { "cmp": "host:port", "pro": "host:port", "rev": "host:port", "rec": "host:port" }
+  "serviceAddresses": { "cmp": "http://host:port", "pro": "http://host:port", "rev": "http://host:port", "rec": "http://host:port" }
 }
 ```
 
@@ -39,7 +39,11 @@ Instruções da atividade de hoje. Os grupos 1–4 implementam as APIs abaixo em
 - `ReviewSummary` = `reviewId, author, subject, content`
 - `ServiceAddresses` = `cmp` (composite), `pro` (product), `rev` (review), `rec` (recommendation)
 
+O `serviceAddress` é sempre calculado pela instância que responde à requisição, nunca aceito do cliente, e usa o formato `http://host:port` retornado por `ServiceUtil.getServerAddress()` (ver 1.5).
+
 ### 1.2 Interfaces REST (assinaturas)
+
+> Códigos de sucesso: os núcleos respondem **200** em POST/GET/DELETE; o composite responde **202** sem corpo em POST/DELETE e **200** no GET. A tabela consolidada está na seção 3.6 do [STEP-2-LIBS](STEP-2-LIBS.md).
 
 **ProductService** — `br.com.fatecararas.api.core.product`
 | Método | Endpoint | Retorno |
@@ -97,14 +101,18 @@ Instruções da atividade de hoje. Os grupos 1–4 implementam as APIs abaixo em
 | `NotFoundException` | 404 | GET de `productId` inexistente (product/composite) |
 | `InvalidInputException` | 422 | `productId < 1` ou violação de regra de negócio (ex.: `rate` fora de 0–5) |
 
-Corpo de erro (`HttpErrorInfo`):
+Além dessas exceções de negócio, requisições inválidas são respondidas com **400**: JSON malformado, parâmetro obrigatório ausente ou parâmetro com tipo inválido (ex.: `GET /product/abc`). Esse tratamento é automático nas libs do STEP-2 (seção 2.4 do [STEP-2-LIBS](STEP-2-LIBS.md)).
+
+Corpo de erro (`HttpErrorInfo`), com `timestamp` em ISO-8601 com fuso:
 ```json
 { "timestamp": "...", "path": "/product/1", "status": 404, "error": "Not Found", "message": "No product found for productId: 1" }
 ```
 
+No STEP-2, a classe passa a ser `br.com.fatecararas.util.http.HttpErrorInfo`, compartilhada pela lib `util`.
+
 ### 1.5 Endereço da instância (`serviceAddress`)
 
-Não use `@Value("${server.port}")` para identificar a porta efetiva do servidor. Implementação de referência (`ServiceUtil`, disponível em `dev.sdras.utils.http` — será extraída para a lib `util` no STEP-2):
+Não use `@Value("${server.port}")` para identificar a porta efetiva do servidor. Implementação de referência do STEP-1:
 
 ```java
 @Component
@@ -132,10 +140,14 @@ public class ServiceUtil implements ApplicationListener<WebServerInitializedEven
 
 A porta real do web server é capturada via `WebServerInitializedEvent` — funciona até com `server.port: 0` (prepara para o escalonamento do STEP-2).
 
+> **Implementação definitiva no STEP-2.** O snippet acima é a referência didática desta aula; a versão compartilhada é `br.com.fatecararas.util.http.ServiceUtil` (lib `util`, seção 2.2 do [STEP-2-LIBS](STEP-2-LIBS.md)) e acrescenta: guarda para ignorar eventos de contexto filho (evita que a porta do Actuator substitua a da aplicação), campos `volatile`, `IllegalStateException` em `getServerAddress()` antes da inicialização e colchetes para IPv6. Ao incorporar o serviço, remova a cópia local e use a classe da lib.
+
 **Fase integrada (após o Eureka)** — alternativamente, injete `org.springframework.cloud.client.serviceregistry.Registration`:
 ```java
-String address = registration.getHost() + ":" + registration.getPort();
+String address = "http://" + registration.getHost() + ":" + registration.getPort();
 ```
+
+> Atenção ao esquema: `registration.getHost() + ":" + registration.getPort()` sozinho devolve `host:port` sem `http://`, formato diferente do contrato do DTO (1.1). Se optar pelo `Registration`, monte a URL com o prefixo `http://`.
 
 **Desafio extra (composite)**: resolver `ServiceAddresses` via `DiscoveryClient.getInstances("product").get(0).getUri()` em vez de ler o campo do payload.
 

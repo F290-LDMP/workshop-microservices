@@ -36,6 +36,8 @@ Aqui, **orquestrar os repositórios** significa reunir os códigos em um único 
 
 Boot 3.0.4 e springdoc 2.0.2 compõem a base de versões adotada neste roteiro. Fixamos as versões para a aula, sem propor uma atualização de plataforma. Todos devem alinhar os projetos a essa mesma base; se a turma já migrou, o conjunto Boot/Cloud/springdoc deve ser revisto em conjunto. Para Boot 3 use springdoc **2.x**, conforme a [documentação de compatibilidade](https://springdoc.org/v2/#what-is-the-compatibility-matrix-of-springdoc-openapi-with-spring-boot).
 
+As anotações Swagger são fixadas em `swagger-annotations-jakarta:2.2.8` na raiz, mas o springdoc 2.0.2 resolve `swagger-core-jakarta:2.2.7` por transitividade. O desalinhamento é benigno e o Gradle converge para 2.2.8; confira com `./gradlew :util:dependencies --configuration compileClasspath` antes de propor qualquer atualização de versão no meio do laboratório.
+
 Os quatro serviços de negócio usam **Spring MVC**, conforme o STEP-1. O Gateway continua com sua stack reativa. Não acrescente `spring-boot-starter-web` ao Gateway.
 
 ### 1.3 Estrutura inicial
@@ -49,9 +51,11 @@ workshop-microservices/
 ├── build.gradle
 ├── gradlew
 ├── gradlew.bat
-├── gradle/wrapper/
-│   ├── gradle-wrapper.jar
-│   └── gradle-wrapper.properties
+├── gradle/
+│   ├── gradle-daemon-jvm.properties
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
 ├── util/
 │   ├── build.gradle
 │   └── src/main/java/br/com/fatecararas/util/
@@ -80,6 +84,8 @@ mkdir -p api/src/main/java/br/com/fatecararas/api/core/recommendation
 mkdir -p api/src/main/java/br/com/fatecararas/api/core/review
 mkdir -p api/src/main/java/br/com/fatecararas/api/composite/product
 mkdir -p spring-cloud microservices
+mkdir -p gradle/wrapper
+printf 'toolchainVersion=17\n' > gradle/gradle-daemon-jvm.properties
 touch spring-cloud/.gitkeep microservices/.gitkeep
 ```
 
@@ -237,9 +243,11 @@ dependencies {
 
 Não aplique o plugin Spring Boot às libs: elas geram `jar`, não `bootJar`. O plugin `java-library` permite exportar dependências usadas nos contratos públicos por meio da configuração `api`.
 
+`spring-boot-starter-web` e o springdoc ficam como `implementation`: são detalhes de implementação desta lib e **não** transitam para quem a consome. Cada serviço MVC precisa declarar o `spring-boot-starter-web` e o `springdoc-openapi-starter-webmvc-ui` (seção 4.3); só isso publica `/v3/api-docs` e o Swagger UI.
+
 ### 2.2 ServiceUtil — endereço real da instância
 
-Padronizamos o pacote `br.com.fatecararas.util.http`. Os grupos que usaram `dev.sdras.utils.http` no STEP-1 devem atualizar os imports ao incorporar o serviço. A porta vem do servidor iniciado, inclusive com `server.port=0`. Ignoramos eventos de um contexto filho de gerenciamento para não substituir a porta da aplicação pela porta do Actuator.
+Padronizamos o pacote `br.com.fatecararas.util.http`. Os grupos que mantiveram uma cópia local do `ServiceUtil` do STEP-1 devem apagá-la e importar `br.com.fatecararas.util.http.ServiceUtil` ao incorporar o serviço. A porta vem do servidor iniciado, inclusive com `server.port=0`. Ignoramos eventos de um contexto filho de gerenciamento para não substituir a porta da aplicação pela porta do Actuator.
 
 **Arquivo: `util/src/main/java/br/com/fatecararas/util/http/ServiceUtil.java`**
 
@@ -1245,12 +1253,15 @@ O acesso inicial é direto ao serviço, com as portas do STEP-1. Se usar porta a
 Na raiz do novo monorepo, com as seções 1–3 concluídas:
 
 ```bash
+./gradlew --version
 ./gradlew projects
 ./gradlew clean :api:build :util:build
 ./gradlew :util:dependencies --configuration compileClasspath
+jar tf api/build/libs/api-1.0.0-SNAPSHOT.jar
+jar tf util/build/libs/util-1.0.0-SNAPSHOT.jar
 ```
 
-Esperado: apenas `api` e `util` como subprojetos; compilação sem ciclo; JARs em `api/build/libs` e `util/build/libs`; nenhuma exigência de `mainClass`, banco ou Eureka. Como o roteiro ainda não adicionou testes às libs, um resultado `test NO-SOURCE` **não comprova o comportamento HTTP**; essa verificação ocorre depois da incorporação dos controllers.
+Esperado: `Daemon JVM` compatível com Java 17 (veio de `gradle/gradle-daemon-jvm.properties`); apenas `api` e `util` como subprojetos; compilação sem ciclo; nenhuma exigência de `mainClass`, banco ou Eureka. Os JARs ficam em `api/build/libs` e `util/build/libs`, com 13 classes em `api` (2 exceções, 7 DTOs e 4 interfaces) e 4 em `util` (`ServiceUtil`, `HttpErrorInfo`, `GlobalControllerExceptionHandler` e `OpenApiConfiguration`); os dois últimos comandos listam essas classes, e a saída de `:util:dependencies` confirma as versões de `spring-web`, springdoc e annotations. Como o roteiro ainda não adicionou testes às libs, um resultado `test NO-SOURCE` **não comprova o comportamento HTTP**; essa verificação ocorre depois da incorporação dos controllers.
 
 ### 6.2 Depois que os serviços forem incorporados
 
