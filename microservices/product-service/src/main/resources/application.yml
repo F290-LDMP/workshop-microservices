@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:7001}
+spring:
+  application:
+    name: product
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/product-db}
+      auto-index-creation: true
+eureka:
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    serviceUrl:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  override-with-generic-response: false

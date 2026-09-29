@@ -4,3 +4,5 @@ include 'util', 'api'
 
 // Os projetos dos alunos serão incluídos explicitamente quando forem copiados.
 // Não inclua caminhos de serviços que ainda não existem.
+
+include 'microservices:product-service'
