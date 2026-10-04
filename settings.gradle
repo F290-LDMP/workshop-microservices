@@ -2,5 +2,7 @@ rootProject.name = 'workshop-microservices'
 
 include 'util', 'api'
 
-// Os projetos dos alunos serão incluídos explicitamente quando forem copiados.
-// Não inclua caminhos de serviços que ainda não existem.
+include 'microservices:product-composite-service'
+project(':microservices:product-composite-service').projectDir = file('microservices/product-composite-service')
+
+// Os demais serviços serão incluídos quando forem incorporados ao monorepo.

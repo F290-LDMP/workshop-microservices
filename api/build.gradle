@@ -5,4 +5,8 @@ dependencies {
     api 'org.springframework:spring-web'
     api "io.swagger.core.v3:swagger-annotations-jakarta:${rootProject.swaggerAnnotationsVersion}"
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    compileOnly "org.projectlombok:lombok:${rootProject.lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${rootProject.lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${rootProject.lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${rootProject.lombokVersion}"
 }

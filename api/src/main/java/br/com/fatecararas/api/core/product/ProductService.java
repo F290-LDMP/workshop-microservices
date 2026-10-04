@@ -42,8 +42,7 @@ public interface ProductService {
                 schema = @Schema(ref = "#/components/schemas/HttpErrorInfo")))
     })
     @GetMapping(value = "/product/{productId}", produces = "application/json")
-    Product getProduct(@Parameter(description = "Identificador do produto", example = "1", required = true)
-            @PathVariable("productId") int productId);
+    Product getProduct(@PathVariable @Parameter(description = "Identificador do produto", example = "1", required = true) int productId);
 
     @Operation(summary = "Excluir product")
     @ApiResponses({
@@ -56,6 +55,5 @@ public interface ProductService {
                 schema = @Schema(ref = "#/components/schemas/HttpErrorInfo")))
     })
     @DeleteMapping(value = "/product/{productId}")
-    void deleteProduct(@Parameter(description = "Identificador do produto", example = "1", required = true)
-            @PathVariable("productId") int productId);
+    void deleteProduct(@PathVariable @Parameter(description = "Identificador do produto", example = "1", required = true) int productId);
 }

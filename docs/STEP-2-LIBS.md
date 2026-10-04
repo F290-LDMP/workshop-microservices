@@ -6,7 +6,7 @@ Esta é a primeira parte prática do [STEP-2](STEP-2.md). Partimos dos contratos
 
 > A estrutura inicial já está disponível na raiz. A seção 1 documenta como recriá-la; quem clonou esta base pode seguir para a implementação das libs nas seções 2 e 3. Execute os comandos Gradle na raiz do repositório, não dentro de `docs/`.
 
-**Entrega desta etapa:** build Gradle multi-project, bibliotecas `util` e `api` implementadas e diretórios `spring-cloud` e `microservices` reservados para os alunos. Primeiro detalhamos `util`; depois, `api`. A integração real com OpenFeign, Docker e o balanceamento continuam no roteiro geral do STEP-2.
+**Entrega desta etapa:** build Gradle multi-project e bibliotecas `util` e `api` implementadas. Primeiro detalhamos `util`; depois, `api`. O BFF implementado está no [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md). Eureka/Gateway, incorporação dos núcleos, Docker e balanceamento continuam no roteiro geral do STEP-2.
 
 ## 1. Organização e preparação do novo repositório
 
@@ -17,7 +17,7 @@ Esta é a primeira parte prática do [STEP-2](STEP-2.md). Partimos dos contratos
 | 1 — product | `microservices/product-service` | Incorporar o serviço de produtos e consumir as libs |
 | 2 — review | `microservices/review-service` | Incorporar o serviço de reviews e consumir as libs |
 | 3 — recommendation | `microservices/recommendation-service` | Incorporar o serviço de recomendações e consumir as libs |
-| 4 — composite | `microservices/product-composite-service` | Incorporar o composite e consumir os contratos dos núcleos |
+| 4 — composite | `microservices/product-composite-service` | Implementar o BFF com OpenFeign conforme STEP-3 |
 | 5 — spring-cloud | `spring-cloud/eureka-server` e `spring-cloud/gateway` | Incorporar Discovery e Gateway |
 | Todas, com orientação docente | `util`, `api` e build raiz | Estabilizar os contratos antes de integrar os serviços |
 
@@ -135,6 +135,7 @@ ext {
     springCloudVersion = '2022.0.2'
     springdocVersion = '2.0.2'
     swaggerAnnotationsVersion = '2.2.8'
+    lombokVersion = '1.18.48'
 }
 
 allprojects {
@@ -480,10 +481,16 @@ dependencies {
     api 'org.springframework:spring-web'
     api "io.swagger.core.v3:swagger-annotations-jakarta:${rootProject.swaggerAnnotationsVersion}"
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    compileOnly "org.projectlombok:lombok:${rootProject.lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${rootProject.lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${rootProject.lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${rootProject.lombokVersion}"
 }
 ```
 
 `spring-web` fornece as anotações dos contratos; não inicia um servidor. As dependências declaradas com `api` ficam disponíveis para quem implementa essas interfaces. Não há dependência de `util` aqui.
+
+Nesta base, Lombok é usado em cinco DTOs: `Product`, `ProductAggregate`, `RecommendationSummary`, `ReviewSummary` e `ServiceAddresses`. Por isso, a versão fica centralizada no build raiz e `api` declara `compileOnly`/`annotationProcessor` (e equivalentes de teste). O annotation processor gera os construtores/accessors durante a compilação; os serviços consumidores recebem bytecode pronto e não precisam declarar Lombok em runtime.
 
 ### 3.2 Exceções de negócio
 
@@ -528,7 +535,7 @@ Os objetos `Product`, `Review` e `Recommendation` representam os dados expostos 
 
 ### 3.4 DTOs dos serviços de núcleo
 
-Os exemplos usam classes Java com construtor vazio, construtor completo, getters e setters, preservando o estilo de acesso `getProductId()` usado nas implementações. Não é necessário Lombok. As anotações `@Schema` documentam o modelo; **não validam regras de negócio**.
+O DTO `Product` usa `@Getter`, `@Setter`, `@NoArgsConstructor` e `@AllArgsConstructor`, preservando os mesmos métodos `getProductId()` usados pelas implementações. `Recommendation` e `Review` continuam com construtores e accessors explícitos. As anotações `@Schema` documentam o modelo; **não validam regras de negócio**.
 
 Os campos de endereço são somente de saída no Swagger. A implementação deve sempre calculá-los na instância que respondeu, sem confiar em um endereço enviado pelo cliente.
 
@@ -538,7 +545,15 @@ Os campos de endereço são somente de saída no Swagger. A implementação deve
 package br.com.fatecararas.api.core.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Schema(description = "Produto")
 public class Product {
     @Schema(description = "Identificador do produto", example = "1", minimum = "1")
@@ -547,24 +562,6 @@ public class Product {
     private int weight;
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private String serviceAddress;
-
-    public Product() { }
-
-    public Product(int productId, String name, int weight, String serviceAddress) {
-        this.productId = productId;
-        this.name = name;
-        this.weight = weight;
-        this.serviceAddress = serviceAddress;
-    }
-
-    public int getProductId() { return productId; }
-    public void setProductId(int productId) { this.productId = productId; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public int getWeight() { return weight; }
-    public void setWeight(int weight) { this.weight = weight; }
-    public String getServiceAddress() { return serviceAddress; }
-    public void setServiceAddress(String serviceAddress) { this.serviceAddress = serviceAddress; }
 }
 ```
 
@@ -659,7 +656,7 @@ public class Review {
 
 ### 3.5 DTOs do composite
 
-`RecommendationSummary` e `ReviewSummary` omitem o `productId`, já presente no agregado, e o endereço individual. `ServiceAddresses` mantém os nomes JSON `cmp`, `pro`, `rev` e `rec` do STEP-1. Quando não houver resultados, o composite deve preencher as listas com `List.of()`, produzindo `[]` no JSON.
+`RecommendationSummary` e `ReviewSummary` omitem o `productId`, já presente no agregado, e o endereço individual. `ServiceAddresses` mantém os nomes JSON `cmp`, `pro`, `rev` e `rec` do STEP-1. Os quatro DTOs do composite usam `@Getter` e `@Setter`; `ProductAggregate` também usa `@NoArgsConstructor`, enquanto os construtores completos e os construtores dos outros DTOs são explícitos. Quando não houver resultados, o composite deve preencher as listas com `List.of()`, produzindo `[]` no JSON.
 
 **Arquivo: `api/src/main/java/br/com/fatecararas/api/composite/product/RecommendationSummary.java`**
 
@@ -667,7 +664,11 @@ public class Review {
 package br.com.fatecararas.api.composite.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Schema(description = "Resumo de recomendação")
 public class RecommendationSummary {
     private int recommendationId;
@@ -685,14 +686,6 @@ public class RecommendationSummary {
         this.content = content;
     }
 
-    public int getRecommendationId() { return recommendationId; }
-    public void setRecommendationId(int recommendationId) { this.recommendationId = recommendationId; }
-    public String getAuthor() { return author; }
-    public void setAuthor(String author) { this.author = author; }
-    public int getRate() { return rate; }
-    public void setRate(int rate) { this.rate = rate; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
 }
 ```
 
@@ -702,7 +695,11 @@ public class RecommendationSummary {
 package br.com.fatecararas.api.composite.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Schema(description = "Resumo de review")
 public class ReviewSummary {
     private int reviewId;
@@ -719,14 +716,6 @@ public class ReviewSummary {
         this.content = content;
     }
 
-    public int getReviewId() { return reviewId; }
-    public void setReviewId(int reviewId) { this.reviewId = reviewId; }
-    public String getAuthor() { return author; }
-    public void setAuthor(String author) { this.author = author; }
-    public String getSubject() { return subject; }
-    public void setSubject(String subject) { this.subject = subject; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
 }
 ```
 
@@ -736,7 +725,11 @@ public class ReviewSummary {
 package br.com.fatecararas.api.composite.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Schema(description = "Instâncias que atenderam à consulta")
 public class ServiceAddresses {
     private String cmp;
@@ -753,14 +746,6 @@ public class ServiceAddresses {
         this.rec = rec;
     }
 
-    public String getCmp() { return cmp; }
-    public void setCmp(String cmp) { this.cmp = cmp; }
-    public String getPro() { return pro; }
-    public void setPro(String pro) { this.pro = pro; }
-    public String getRev() { return rev; }
-    public void setRev(String rev) { this.rev = rev; }
-    public String getRec() { return rec; }
-    public void setRec(String rec) { this.rec = rec; }
 }
 ```
 
@@ -771,8 +756,14 @@ package br.com.fatecararas.api.composite.product;
 
 import java.util.List;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Schema(description = "Produto com recomendações e reviews")
+@Getter
+@Setter
+@NoArgsConstructor
+@Schema(description = "Representação agregada do produto com recomendações, avaliações e endereços das instâncias que participaram da composição.")
 public class ProductAggregate {
     @Schema(description = "Identificador do produto", example = "1", minimum = "1")
     private int productId;
@@ -783,8 +774,6 @@ public class ProductAggregate {
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private ServiceAddresses serviceAddresses;
 
-    public ProductAggregate() { }
-
     public ProductAggregate(int productId, String name, int weight, List<RecommendationSummary> recommendations, List<ReviewSummary> reviews, ServiceAddresses serviceAddresses) {
         this.productId = productId;
         this.name = name;
@@ -794,18 +783,6 @@ public class ProductAggregate {
         this.serviceAddresses = serviceAddresses;
     }
 
-    public int getProductId() { return productId; }
-    public void setProductId(int productId) { this.productId = productId; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public int getWeight() { return weight; }
-    public void setWeight(int weight) { this.weight = weight; }
-    public List<RecommendationSummary> getRecommendations() { return recommendations; }
-    public void setRecommendations(List<RecommendationSummary> recommendations) { this.recommendations = recommendations; }
-    public List<ReviewSummary> getReviews() { return reviews; }
-    public void setReviews(List<ReviewSummary> reviews) { this.reviews = reviews; }
-    public ServiceAddresses getServiceAddresses() { return serviceAddresses; }
-    public void setServiceAddresses(ServiceAddresses serviceAddresses) { this.serviceAddresses = serviceAddresses; }
 }
 ```
 
@@ -1091,7 +1068,7 @@ public interface ProductCompositeService {
 
 ## 4. Incorporar os projetos — atividade posterior dos alunos
 
-> **Pare antes desta seção ao entregar apenas a base.** `spring-cloud` e `microservices` continuam contendo somente `.gitkeep`. As instruções seguintes são executadas por cada equipe quando seus projetos forem integrados.
+> Esta seção documenta como integrar os projetos das equipes. Nesta versão, o `product-composite-service` já está implementado; siga o [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md) para seus detalhes. Os três núcleos e `spring-cloud` ainda serão importados.
 
 ### 4.1 Transferência dos repositórios
 
@@ -1115,7 +1092,7 @@ Esse procedimento importa um snapshot, sem o histórico Git original. A partir d
 
 ### 4.2 Incluir os projetos no Gradle
 
-Acrescente cada `include` **somente quando o respectivo diretório contiver seu `build.gradle`**. Quando as cinco equipes tiverem concluído a transferência, o `settings.gradle` terá:
+Acrescente cada `include` **somente quando o respectivo diretório contiver seu `build.gradle`**. O composite já consta na configuração atual. Quando os outros projetos estiverem integrados, o `settings.gradle` terá:
 
 ```groovy
 rootProject.name = 'workshop-microservices'
@@ -1123,7 +1100,6 @@ include 'util', 'api'
 include 'microservices:product-service'
 include 'microservices:review-service'
 include 'microservices:recommendation-service'
-include 'microservices:product-composite-service'
 include 'spring-cloud:eureka-server'
 include 'spring-cloud:gateway'
 ```
@@ -1212,9 +1188,9 @@ public class ProductServiceImpl implements ProductService {
 
 Neste trecho, `repository.findByProductId` retorna `Optional<ProductEntity>` e `serviceUtil` é injetado pelo construtor. Adapte ao repository/mapper concreto da equipe. Não repita `@GetMapping`/`@PostMapping`/`@DeleteMapping` no controller; os métodos herdam os mapeamentos da interface. Remova prefixos `@RequestMapping` antigos que duplicariam o caminho.
 
-As validações continuam no serviço: identificadores positivos; `rate` de 0 a 5; duplicidade traduzida em 422. Reviews/recommendations sem registros retornam lista vazia. O composite permanece com o mock do STEP-1 nesta etapa; sua implementação real é o próximo trabalho.
+As validações continuam no serviço: identificadores positivos; `rate` de 0 a 5; duplicidade traduzida em 422. Reviews/recommendations sem registros retornam lista vazia. O composite real com OpenFeign está documentado no [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md); os exemplos de mock descrevem somente o aceite inicial do STEP-1.
 
-O futuro client `@FeignClient` fica no composite, não na lib. A herança simples de contratos é descrita na [documentação do OpenFeign](https://docs.spring.io/spring-cloud-openfeign/docs/4.0.6/reference/html/#spring-cloud-feign-inheritance). O advice trata as exceções locais; a integração precisará traduzir os erros HTTP remotos para as exceções do contrato.
+Os clients `@FeignClient` ficam no composite, não na lib; sua implementação está no [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md). A herança simples de contratos é descrita na [documentação do OpenFeign](https://docs.spring.io/spring-cloud-openfeign/docs/4.0.6/reference/html/#spring-cloud-feign-inheritance). O advice trata as exceções locais; o decoder do composite traduz erros remotos 400/404/422 para as exceções do contrato.
 
 ## 5. Swagger OpenAPI em execução
 
@@ -1246,9 +1222,39 @@ Desativamos a inclusão automática de respostas genéricas do advice para que o
 
 O acesso inicial é direto ao serviço, com as portas do STEP-1. Se usar porta aleatória, consulte a porta efetiva no log. As rotas de negócio do Gateway não publicam automaticamente os recursos de Swagger; a agregação das documentações no Gateway é uma tarefa posterior.
 
+### 5.3 Escrever documentação útil para quem consome a API
+
+As anotações não devem se limitar ao nome do método e a descrições genéricas como “operação concluída”. Em cada interface REST, documente o propósito e os efeitos da operação, os parâmetros, o corpo esperado e o formato/status de cada resposta. A interface continua sendo a fonte dos mappings e da documentação; os controllers concretos apenas a implementam.
+
+No `ProductCompositeService`, use `@Operation` para explicar o comportamento agregado e `@ApiResponse` para descrever respostas reais. No POST, descreva que o corpo pode incluir coleções opcionais e mostre um exemplo válido:
+
+```java
+@Operation(
+    summary = "Criar produto agregado",
+    description = "Cria o produto e os itens associados nos serviços de núcleo. A cascata não é uma transação distribuída.",
+    requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+        description = "Produto com listas opcionais de recomendações e avaliações.",
+        required = true,
+        content = @Content(mediaType = "application/json",
+            schema = @Schema(implementation = ProductAggregate.class),
+            examples = @ExampleObject(value = "{\"productId\":1,\"name\":\"produto 1\",\"weight\":100,\"recommendations\":[],\"reviews\":[]}"))))
+```
+
+Documente os status de sucesso coerentes com o contrato: núcleos respondem 200; composite responde 202 sem corpo em POST/DELETE e 200 com `ProductAggregate` no GET. Para erros, declare o schema `HttpErrorInfo` em cada resposta pertinente:
+
+```java
+@ApiResponse(responseCode = "404", description = "Produto não encontrado",
+    content = @Content(mediaType = "application/json",
+        schema = @Schema(ref = "#/components/schemas/HttpErrorInfo")))
+```
+
+Na resposta 200 do GET, informe `ProductAggregate.class` e um exemplo JSON completo. Inclua as listas e `serviceAddresses`; use descrições de resposta que expliquem que recommendations/reviews podem vir vazias. Para POST/DELETE, marque o sucesso com `content = @Content` para deixar claro que não há corpo.
+
+Descreva também os próprios schemas: significado, unidade e exemplos de cada campo; `minimum`/`maximum` quando fizerem parte do contrato; e campos preenchidos apenas pelo servidor como `READ_ONLY`. Nos resumos, explique o significado do identificador e dos textos. Em `ServiceAddresses`, documente `cmp`, `pro`, `rev` e `rec` individualmente e use URLs de exemplo. Consulte as anotações completas em `api/src/main/java/br/com/fatecararas/api/composite/product/` e o [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md) como modelo aplicado.
+
 ## 6. Roteiro de verificação
 
-### 6.1 Antes de receber os projetos dos alunos
+### 6.1 Validar as bibliotecas isoladamente
 
 Na raiz do novo monorepo, com as seções 1–3 concluídas:
 
@@ -1261,29 +1267,29 @@ jar tf api/build/libs/api-1.0.0-SNAPSHOT.jar
 jar tf util/build/libs/util-1.0.0-SNAPSHOT.jar
 ```
 
-Esperado: `Daemon JVM` compatível com Java 17 (veio de `gradle/gradle-daemon-jvm.properties`); apenas `api` e `util` como subprojetos; compilação sem ciclo; nenhuma exigência de `mainClass`, banco ou Eureka. Os JARs ficam em `api/build/libs` e `util/build/libs`, com 13 classes em `api` (2 exceções, 7 DTOs e 4 interfaces) e 4 em `util` (`ServiceUtil`, `HttpErrorInfo`, `GlobalControllerExceptionHandler` e `OpenApiConfiguration`); os dois últimos comandos listam essas classes, e a saída de `:util:dependencies` confirma as versões de `spring-web`, springdoc e annotations. Como o roteiro ainda não adicionou testes às libs, um resultado `test NO-SOURCE` **não comprova o comportamento HTTP**; essa verificação ocorre depois da incorporação dos controllers.
+Esses comandos isolam a compilação das bibliotecas e não descrevem a lista atual de projetos: o build completo também inclui o composite (consulte README). Os JARs ficam em `api/build/libs` e `util/build/libs`; `jar tf` permite conferir as classes entregues. `:util:dependencies` mostra as versões resolvidas. As bibliotecas não iniciam servidor nem publicam endpoints; a verificação HTTP e Swagger deve ser feita nas aplicações MVC.
 
-### 6.2 Depois que os serviços forem incorporados
+### 6.2 Executar o composite disponível no repositório
 
-Execute o build completo, prepare os bancos conforme os READMEs das equipes e inicie Eureka e os serviços em terminais separados:
+Atualmente, o monorepo inclui `api`, `util` e `product-composite-service`; os módulos Eureka e dos três núcleos ainda não foram incorporados. Compile a base e inicie o composite:
 
 ```bash
 ./gradlew clean build
-./gradlew :spring-cloud:eureka-server:bootRun
-./gradlew :microservices:product-service:bootRun
-# Outros terminais: recommendation-service, review-service e product-composite-service.
+./gradlew :microservices:product-composite-service:bootRun
 ```
 
-Confirme as operações documentadas e a resolução do schema de erro (requer `jq`):
+Sem Eureka e os serviços de núcleo registrados, o Swagger e o OpenAPI podem ser consultados, mas chamadas de agregação não terão respostas dos backends. Confira a documentação publicada (requer `jq`):
 
 ```bash
-curl -fsS localhost:7001/v3/api-docs | jq '.paths | keys'
-curl -fsS localhost:7001/v3/api-docs | jq '.components.schemas.HttpErrorInfo'
-curl -fsS localhost:7001/v3/api-docs | jq '.paths["/product/{productId}"].get.responses'
-curl -fsS localhost:7002/v3/api-docs | jq '.paths["/recommendation"].get.responses["200"]'
+curl -fsS localhost:7000/v3/api-docs | jq '.paths | keys'
+curl -fsS localhost:7000/v3/api-docs | jq '.components.schemas.HttpErrorInfo'
 ```
 
-Esperado: caminhos da aplicação atual, schema de erro com os cinco campos, GET de produto documentando 200/400/404/422 e GET de recommendation com retorno de lista. Abra também o Swagger UI e confira se ele carrega sem erro de resolução de `$ref`.
+Abra `http://localhost:7000/swagger-ui.html` e confira os três endpoints, exemplos JSON, schemas de request/response e `HttpErrorInfo` com seus cinco campos. Se alterou `server.port`, use a porta configurada nas URLs.
+
+### 6.3 Validar a integração depois de importar os demais módulos
+
+Somente depois de incluir `spring-cloud:eureka-server` e `product-service`, `recommendation-service` e `review-service` em `settings.gradle`, inicie Eureka, prepare os bancos conforme os READMEs das equipes e suba os quatro serviços em terminais separados. Então valide os documentos dos núcleos nas portas 7001, 7002 e 7003 e execute as chamadas HTTP de exemplo abaixo. O composite continua na porta 7000, salvo configuração diferente.
 
 Roteiro HTTP para product (utilize um `productId` reservado para o teste):
 
@@ -1302,9 +1308,9 @@ curl -i 'localhost:7003/review?productId=900001' # 200 + [] se não há reviews
 curl -i 'localhost:7002/recommendation?productId=900001' # 200 + [] se não há recomendações
 ```
 
-Repita criação, consulta e exclusão para review/recommendation usando os payloads do STEP-1; confira duplicidade e `rate` inválido. No composite mockado, valide 1 → 200, 13 → 404 e 0 → 422, além de POST/DELETE → 202 sem corpo. Em todos os erros tratados, confira corpo e status HTTP, não apenas a descrição no Swagger.
+Repita criação, consulta e exclusão para review/recommendation usando os payloads do STEP-1; confira duplicidade e `rate` inválido. Para o composite integrado, siga os fluxos e critérios do [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md); POST/DELETE respondem 202 sem corpo. Em todos os erros tratados, confira corpo e status HTTP, não apenas a descrição no Swagger.
 
-### 6.3 Problemas comuns
+### 6.4 Problemas comuns
 
 | Sintoma | Conferência |
 |---------|-------------|
@@ -1319,17 +1325,20 @@ Repita criação, consulta e exclusão para review/recommendation usando os payl
 
 ## 7. Critérios de aceite
 
-**Base compartilhada — entrega atual:**
+**Base compartilhada — api/util:**
 
 - [ ] Monorepo `workshop-microservices` com material de instruções em `docs/`.
 - [ ] Gradle Wrapper versionado e build centralizado.
-- [ ] Apenas `api` e `util` incluídos no build inicial.
-- [ ] `spring-cloud` e `microservices` com somente `.gitkeep`, sem implementações fornecidas.
 - [ ] `util` com `ServiceUtil`, `HttpErrorInfo`, handler MVC e configuração OpenAPI.
 - [ ] `api` com duas exceções, sete DTOs e quatro interfaces completas e documentadas.
 - [ ] Contratos preservam campos, tipos, nomes de métodos e endpoints do STEP-1.
 - [ ] Nenhuma entidade JPA/MongoDB ou repository nas libs.
-- [ ] Build das duas libs concluído e README com instruções de uso.
+- [ ] Build das libs concluído e README com instruções de uso.
+
+**BFF — implementação atual:**
+
+- [ ] `product-composite-service` incluído no Gradle e dependente de `api`/`util`.
+- [ ] OpenFeign clients, agregação e documentação Swagger conforme STEP-3.
 
 **Integração — entrega posterior de cada equipe:**
 
@@ -1345,6 +1354,7 @@ Repita criação, consulta e exclusão para review/recommendation usando os payl
 
 - [README](../README.md): estrutura da base, pré-requisitos, comandos de verificação e convenções comuns.
 - [STEP-1](STEP-1.md): contratos, entidades de persistência, tarefas por equipe e critérios de aceite.
-- [STEP-2](STEP-2.md): arquitetura alvo, integração com OpenFeign, Docker e balanceamento de carga.
+- [STEP-2](STEP-2.md): integração dos serviços, Docker e balanceamento de carga.
+- [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md): implementação e operação do BFF com OpenFeign.
 
-Este roteiro desenvolve os contratos definidos no STEP-1: usa MVC/Servlet no handler, mantém contratos síncronos, documenta também POST/DELETE e captura a porta por `WebServerInitializedEvent`. A implementação dos serviços e a orquestração em runtime permanecem sob responsabilidade das equipes, nas etapas seguintes.
+Este roteiro desenvolve os contratos definidos no STEP-1: usa MVC/Servlet no handler, mantém contratos síncronos, documenta também POST/DELETE e captura a porta por `WebServerInitializedEvent`. O composite está implementado em runtime no STEP-3; os três núcleos e a infraestrutura Spring Cloud permanecem para integração pelas equipes.

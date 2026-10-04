@@ -1,8 +1,8 @@
-# STEP 2 — Monorepo + BFF com OpenFeign + Docker (premissa da próxima aula)
+# STEP 2 — Integração dos serviços + Docker + balanceamento de carga
 
-> **Comece pelo [roteiro de preparação do monorepo e das libs](STEP-2-LIBS.md).** Ele detalha a criação do novo repositório, primeiro `util` e depois `api`, o handler global e o Swagger OpenAPI. Na entrega inicial, `spring-cloud` e `microservices` ficam apenas com `.gitkeep`, para receber os projetos dos alunos.
+> **Comece pelos roteiros do repositório:** [STEP-2-LIBS](STEP-2-LIBS.md) explica `util` e `api`; [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md) implementa o BFF. Eureka/Gateway e os três núcleos ainda devem ser incorporados pelas equipes.
 
-Este documento apresenta a arquitetura alvo e as etapas posteriores: incorporar os cinco repositórios, **fechar o ciclo composite→núcleos** (BFF com OpenFeign), demonstrar o **balanceamento de carga** e dockerizar o cenário com possibilidade de escala.
+Este documento apresenta as etapas posteriores: incorporar os três serviços de núcleo e os projetos Eureka/Gateway, demonstrar o **balanceamento de carga** e dockerizar o cenário com possibilidade de escala. O composite com OpenFeign já está implementado conforme STEP-3.
 
 ## 1. Monorepo (Gradle multi-project)
 
@@ -17,7 +17,7 @@ workshop-microservices/
 │   ├── product-service/
 │   ├── recommendation-service/
 │   ├── review-service/
-│   └── product-composite-service/   # evolui para BFF
+│   └── product-composite-service/   # BFF com OpenFeign
 ├── spring-cloud/
 │   ├── eureka-server/
 │   └── gateway/
@@ -47,13 +47,13 @@ O `product-composite-service` **sai do mock** do STEP-1 e evolui para um **BFF (
 A orquestração real é implementada com **Spring Cloud OpenFeign** (substituindo a classe mockada e o `RestTemplate` manual), aproveitando as interfaces da lib `api` como contrato do client:
 
 ```java
-@FeignClient(name = "product")
+@FeignClient(name = "${app.services.product}")
 public interface ProductClient extends ProductService { }
 ```
 
-- `@EnableFeignClients` na aplicação do BFF
-- Resolução via Eureka (`feign.client` + `spring-cloud-openfeign` no classpath)
-- Regras do BFF permanecem as do STEP-1: cascata em create/delete, propagação de 404, propagação de 404/422 com base no `HttpErrorInfo` do núcleo
+- `@EnableFeignClients` na aplicação do BFF; os IDs dos serviços são configurados em `app.services` no `application.yml`
+- Resolução via Eureka e Spring Cloud LoadBalancer; os IDs lógicos são `app.services.product`, `app.services.recommendation` e `app.services.review`
+- Regras do BFF: cascata em create/delete e tradução dos status remotos 400/404/422 para as exceções compartilhadas; consulte o STEP-3 para os detalhes atuais
 
 > **Nota de design — BFF ≠ lib de contratos.** O BFF é o `product-composite-service`: um **serviço em runtime** que orquestra os núcleos e molda a resposta para o frontend. A lib `api` é apenas a **biblioteca de contratos** (interfaces, DTOs, exceções) — sem runtime; é o *contrato* que os núcleos **implementam** e o BFF **consome**. A herança `ProductClient extends ProductService` é suportada oficialmente pelo Spring Cloud OpenFeign ("Feign Inheritance Support").
 
@@ -151,5 +151,5 @@ A disciplina é focada em **Microservices com Message Broker** — os próximos 
 - STEP-1 versionado nos 5 repositórios (tags por grupo facilitam o merge).
 - Docker rodando na máquina (Docker Engine + Compose plugin).
 - Contratos do STEP-1 estáveis — qualquer divergência de DTO/endpoint deve ser corrigida **antes** do merge no monorepo.
-- Aceite do STEP-1 concluído por grupo (núcleos entregues com endpoints reais; o mock do composite é substituído na própria aula 2).
+- Aceite do STEP-1 concluído por grupo (núcleos entregues com endpoints reais e integrados ao BFF do STEP-3).
 - Rota de debug removida/desativada após a validação (núcleos ficam internos, acessíveis só pelo BFF via Eureka).

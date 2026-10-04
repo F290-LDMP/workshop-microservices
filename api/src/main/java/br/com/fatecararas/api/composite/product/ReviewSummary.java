@@ -1,12 +1,20 @@
 package br.com.fatecararas.api.composite.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Schema(description = "Resumo de review")
 public class ReviewSummary {
+    @Schema(description = "Identificador da avaliação no serviço de review", example = "1", minimum = "1")
     private int reviewId;
+    @Schema(description = "Autor da avaliação", example = "Bia")
     private String author;
+    @Schema(description = "Assunto da avaliação", example = "Qualidade")
     private String subject;
+    @Schema(description = "Texto da avaliação", example = "Atendeu às expectativas")
     private String content;
 
     public ReviewSummary() { }
@@ -18,12 +26,4 @@ public class ReviewSummary {
         this.content = content;
     }
 
-    public int getReviewId() { return reviewId; }
-    public void setReviewId(int reviewId) { this.reviewId = reviewId; }
-    public String getAuthor() { return author; }
-    public void setAuthor(String author) { this.author = author; }
-    public String getSubject() { return subject; }
-    public void setSubject(String subject) { this.subject = subject; }
-    public String getContent() { return content; }
-    public void setContent(String content) { this.content = content; }
 }

@@ -2,6 +2,8 @@
 
 Instruções da atividade de hoje. Os grupos 1–4 implementam as APIs abaixo em repositórios separados; o grupo 5 implementa Discovery e Edge. Ao final, integramos tudo.
 
+> Este documento descreve a etapa original, na qual o composite era mockado. O estado atual substituiu esse mock pela integração OpenFeign; consulte [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md) para executar e validar a implementação presente.
+
 ## 1. Contratos compartilhados
 
 > Estes contratos são a "API unificada" que será extraída para a lib `api` no STEP-2. **Todos os grupos devem respeitar nomes, tipos e formatos exatamente como definidos aqui.**

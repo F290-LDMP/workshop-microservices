@@ -17,7 +17,8 @@ workshop-microservices/
 ├── docs/
 │   ├── STEP-1.md
 │   ├── STEP-2-LIBS.md
-│   └── STEP-2.md
+│   ├── STEP-2.md
+│   └── STEP-3-COMPOSITE.md
 ├── settings.gradle
 ├── build.gradle
 ├── gradlew
@@ -44,21 +45,25 @@ workshop-microservices/
 │       │                                # GlobalControllerExceptionHandler
 │       └── openapi/                     # OpenApiConfiguration
 ├── spring-cloud/.gitkeep
-└── microservices/.gitkeep
+└── microservices/
+    └── product-composite-service/    # BFF com OpenFeign + Swagger
 ```
 
 - `api`: contratos do workshop — 7 DTOs, 2 exceções de negócio e as 4 interfaces REST com anotações Swagger OpenAPI. Não depende de `util`; expõe `spring-web` e `swagger-annotations-jakarta` via configuração `api`.
 - `util`: utilitários compartilhados — identificação da instância (`ServiceUtil`), formato de erro (`HttpErrorInfo`), tratamento global (`GlobalControllerExceptionHandler`) e metadados do OpenAPI (`OpenApiConfiguration`). Depende de `api`, sem ciclo.
 - `spring-cloud`: receberá os projetos Eureka e Gateway da equipe responsável; contém apenas `.gitkeep`.
-- `microservices`: receberá product, review, recommendation e composite; contém apenas `.gitkeep`.
+- `microservices`: contém `product-composite-service`; receberá product, review e recommendation quando integrados.
 
-As bibliotecas usam `java-library` e geram JARs comuns: não possuem classe `main`, servidor HTTP, `application.yml` nem `bootRun`. O código dos serviços ainda não foi incorporado — as libs são a entrega atual desta etapa. Os `.gitkeep` restantes existem apenas para versionar `spring-cloud/` e `microservices/`, que ainda estão vazios.
+As bibliotecas usam `java-library` e geram JARs comuns: não possuem classe `main`, servidor HTTP, `application.yml` nem `bootRun`. O `product-composite-service` é uma aplicação Spring MVC executável, incluída como subprojeto Gradle. Os outros serviços e o stack spring-cloud ainda não estão incorporados.
+
+O módulo `api` usa Lombok nos DTOs `Product`, `ProductAggregate`, `RecommendationSummary`, `ReviewSummary` e `ServiceAddresses`. A versão (`1.18.48`) fica centralizada em `build.gradle`; `api/build.gradle` configura o annotation processor e as dependências `compileOnly`/de teste. Lombok gera os accessors e construtores durante a compilação do JAR, portanto os serviços que consomem `api` não precisam adicioná-lo como dependência de runtime.
 
 ## Documentação do workshop
 
 - [STEP-1 — APIs, Eureka e Gateway](docs/STEP-1.md): contratos e tarefas das equipes.
 - [STEP-2 — Bibliotecas compartilhadas](docs/STEP-2-LIBS.md): preparação da base, implementação de `util` e `api`, tratamento de erros e Swagger OpenAPI.
-- [STEP-2 — Integração dos serviços](docs/STEP-2.md): OpenFeign, Docker e balanceamento de carga.
+- [STEP-2 — Integração dos serviços](docs/STEP-2.md): integração dos núcleos, Docker e balanceamento de carga.
+- [STEP-3 — Implementação do product-composite](docs/STEP-3-COMPOSITE.md): BFF com OpenFeign, orquestração, erros remotos e Swagger.
 
 ## Java usado pelo Gradle
 
@@ -80,7 +85,7 @@ Execute na raiz do repositório:
 
 No Windows, use `gradlew.bat` no lugar de `./gradlew`. Se necessário, no Linux/macOS restaure a permissão com `chmod +x gradlew`.
 
-O build inclui somente `api` e `util`. As duas libs compilam de verdade: `compileJava` executa e gera `api/build/libs/api-1.0.0-SNAPSHOT.jar` (13 classes) e `util/build/libs/util-1.0.0-SNAPSHOT.jar` (4 classes). Apenas `test` permanece `NO-SOURCE`, pois as libs não têm testes próprios; validar o comportamento HTTP depende da incorporação dos controllers pelos serviços.
+O build inclui `api`, `util` e `microservices:product-composite-service`. O composite precisa do Eureka e dos três serviços de núcleo em execução para completar as chamadas. Consulte o STEP-3 para iniciar e conferir a aplicação.
 
 Saída real resumida dos dois primeiros comandos:
 
@@ -93,6 +98,8 @@ Daemon JVM:    Compatible with Java 17, any vendor, nativeImageCapable=false (fr
 $ ./gradlew projects
 Root project 'workshop-microservices'
 +--- Project ':api'
++--- Project ':microservices'
+|    \--- Project ':microservices:product-composite-service'
 \--- Project ':util'
 ```
 
@@ -121,12 +128,32 @@ import br.com.fatecararas.util.openapi.OpenApiConfiguration;
 @Import({ServiceUtil.class, GlobalControllerExceptionHandler.class, OpenApiConfiguration.class})
 ```
 
-Implemente as interfaces de `api` nos controllers (`ProductService`, `ReviewService`, `RecommendationService`, `ProductCompositeService`) sem repetir `@GetMapping`/`@PostMapping`/`@DeleteMapping`. O detalhamento está nas seções 4 e 5 do [STEP-2-LIBS](docs/STEP-2-LIBS.md), incluindo o `application.yml` do springdoc e as portas do Swagger UI de cada serviço.
+Implemente as interfaces de `api` nos controllers (`ProductService`, `ReviewService`, `RecommendationService`, `ProductCompositeService`) sem repetir `@GetMapping`/`@PostMapping`/`@DeleteMapping`. As seções 4 e 5 do [STEP-2-LIBS](docs/STEP-2-LIBS.md) explicam contratos, springdoc e como documentar operações, respostas de erro, exemplos e schemas; o [STEP-3-COMPOSITE](docs/STEP-3-COMPOSITE.md) mostra o resultado no BFF.
+
+### Endereços dos serviços agregados
+
+O `product-composite-service` configura em `application.yml` os **IDs de serviço** `product`, `recommendation` e `review`, que devem coincidir com o `spring.application.name` registrado por cada núcleo no Eureka. Os Feign clients usam esses IDs; Eureka/LoadBalancer resolve a instância e faz o balanceamento. Não configure `localhost` nem portas individuais para esses serviços no composite: isso contornaria a descoberta e não funcionaria ao escalar instâncias ou executar em Docker.
+
+A porta definida para o composite é `7000`. Se ela estiver ocupada, inicie-o com `SERVER_PORT=7100 ./gradlew :microservices:product-composite-service:bootRun` e use a porta alternativa nas URLs do Swagger e dos endpoints.
+
+Essa escolha segue o exemplo do [Capítulo 11](https://github.com/PacktPublishing/Microservices-with-Spring-Boot-and-Spring-Cloud-Fourth-Edition/tree/main/Chapter11): a integração usa destinos lógicos como `http://product`, `http://recommendation` e `http://review`, e o cliente com balanceamento os resolve pelo Eureka. No nosso projeto, os nomes são externalizados em `app.services` e referenciados pelos `@FeignClient`. Para outro nome de aplicação, defina `PRODUCT_SERVICE_ID`, `RECOMMENDATION_SERVICE_ID` ou `REVIEW_SERVICE_ID`; para mudar o endereço do Eureka, use `EUREKA_URL`.
+
+```yaml
+app:
+  services:
+    product: ${PRODUCT_SERVICE_ID:product}
+    recommendation: ${RECOMMENDATION_SERVICE_ID:recommendation}
+    review: ${REVIEW_SERVICE_ID:review}
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+```
 
 ## Convenções para as próximas etapas
 
 - Pacote raiz e grupo Gradle: `br.com.fatecararas`.
-- Versões alinhadas ao roteiro: Spring Boot 3.0.4, Spring Cloud 2022.0.2 e springdoc 2.0.2.
+- Versões alinhadas ao roteiro: Spring Boot 3.0.4, Spring Cloud 2022.0.2, springdoc 2.0.2 e Lombok 1.18.48.
 - As libs `api` e `util` já estão implementadas e versionadas; evite duplicar DTOs, interfaces, exceções ou o handler dentro dos serviços.
-- Incorpore os serviços nos respectivos diretórios e inclua-os explicitamente em `settings.gradle` somente quando seus projetos estiverem presentes.
+- O `product-composite-service` é implementado neste repositório. Incorpore os demais serviços nos respectivos diretórios e inclua-os em `settings.gradle` quando presentes.
 - Use o Wrapper da raiz para todos os módulos.
