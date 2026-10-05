@@ -9,6 +9,7 @@ ext {
     springCloudVersion = '2022.0.2'
     springdocVersion = '2.0.2'
     swaggerAnnotationsVersion = '2.2.8'
+    lombokVersion = '1.18.48'
 }
 
 allprojects {
