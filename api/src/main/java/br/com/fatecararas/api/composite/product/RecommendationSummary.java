@@ -1,11 +1,12 @@
 package br.com.fatecararas.api.composite.product;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Setter
-@Getter
+@Setter @Getter @AllArgsConstructor @NoArgsConstructor
 @Schema(description = "Resumo de recomendação")
 public class RecommendationSummary {
     @Schema(description = "Identificador da recomendação no serviço de recommendation", example = "1", minimum = "1")
@@ -16,14 +17,4 @@ public class RecommendationSummary {
     private int rate;
     @Schema(description = "Texto da recomendação", example = "Ótimo produto")
     private String content;
-
-    public RecommendationSummary() { }
-
-    public RecommendationSummary(int recommendationId, String author, int rate, String content) {
-        this.recommendationId = recommendationId;
-        this.author = author;
-        this.rate = rate;
-        this.content = content;
-    }
-
 }
