@@ -1,0 +1,10 @@
+INSERT INTO reviews (product_id, author, subject, content) VALUES (1, 'Joao Silva', 'Classico obrigatorio', 'Narrativa marcante sobre ciume e memoria.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (2, 'Maria Souza', 'Retrato social forte', 'Descricoes vivas do cortico carioca.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (3, 'Carlos Lima', 'Leitura densa', 'Texto exige atencao mas recompensa muito.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (4, 'Ana Costa', 'Machado no seu melhor', 'Ironia fina do inicio ao fim.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (5, 'Pedro Alves', 'Romantismo indigenista', 'Linguagem poetica, historia emocionante.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (6, 'Fernanda Rocha', 'Protagonista marcante', 'Critica social por tras de um romance.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (7, 'Lucas Martins', 'Aventura historica', 'Bom ritmo, personagens bem construidos.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (1, 'Juliana Dias', 'Continuacao interessante', 'Fecha bem o universo de Bras Cubas.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (2, 'Rafael Nunes', 'Retrato do sertao', 'Cru e realista, muito impactante.');
+INSERT INTO reviews (product_id, author, subject, content) VALUES (13, 'Patricia Gomes', 'Obra-prima', 'Linguagem dificil mas riquissima.');
