@@ -5,4 +5,6 @@ include 'util', 'api'
 include 'microservices:product-composite-service'
 project(':microservices:product-composite-service').projectDir = file('microservices/product-composite-service')
 
-// Os demais serviços serão incluídos quando forem incorporados ao monorepo.
+include 'microservices:review-service'
+
+// Product, recommendation e infraestrutura serão incluídos quando incorporados.

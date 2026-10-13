@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: review
+  datasource:
+    url: ${REVIEW_TEST_DB_URL:jdbc:h2:mem:reviews;MODE=PostgreSQL;DB_CLOSE_DELAY=-1}
+    username: ${REVIEW_TEST_DB_USER:sa}
+    password: ${REVIEW_TEST_DB_PASSWORD:}
+  flyway:
+    locations: ${REVIEW_TEST_MIGRATIONS:classpath:db/postgresql}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+eureka:
+  client:
+    enabled: false
+springdoc:
+  override-with-generic-response: false
