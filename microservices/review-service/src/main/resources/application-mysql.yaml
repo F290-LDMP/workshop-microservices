@@ -1,0 +1,5 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/reviewsdb}
+  flyway:
+    locations: classpath:db/migration
