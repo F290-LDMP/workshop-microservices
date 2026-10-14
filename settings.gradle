@@ -1,0 +1,5 @@
+rootProject.name = 'workshop-microservices'
+
+include 'api'
+include 'util'
+include 'microservices:recommendation-service'
