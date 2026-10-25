@@ -2,8 +2,8 @@
 
 ## Base e objetivo
 
-Sequência local: `codex/rabbitmq-base` → `codex/spring-security-keycloak` → `codex/central-configuration`.
-A base RabbitMQ foi preservada antes desta etapa. A segunda implementação parte desta branch, permitindo ensinar cada mudança separadamente com `git diff codex/rabbitmq-base..codex/spring-security-keycloak`.
+Sequência local: `rabbitmq-base` → `spring-security-keycloak` → `central-configuration`.
+A base RabbitMQ foi preservada antes desta etapa. A segunda implementação parte desta branch, permitindo ensinar cada mudança separadamente com `git diff rabbitmq-base..spring-security-keycloak`.
 
 Mantemos Java 17, Spring Boot 3.0.4 e Spring Cloud 2022.0.2 do workshop. O capítulo 12 da terceira edição introduz segurança; usamos Keycloak como provedor OAuth2/OIDC externo, em lugar do authorization server do exemplo do livro. Não é necessário adapter específico do Keycloak: as aplicações são Resource Servers OAuth2 padrão.
 
@@ -34,7 +34,7 @@ Leia as classes completas e compare a branch anterior. As bibliotecas `api` e `u
 ## 2. Executar o laboratório
 
 ```bash
-git switch codex/spring-security-keycloak
+git switch spring-security-keycloak
 # Somente se .env ainda não existir:
 cp .env.example .env
 ./gradlew clean build
