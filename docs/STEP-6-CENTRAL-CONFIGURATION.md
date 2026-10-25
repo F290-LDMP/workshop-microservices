@@ -38,7 +38,7 @@ git diff codex/spring-security-keycloak..codex/central-configuration
 
 ## 2. Publicar as configurações no GitHub
 
-Os arquivos estão preparados localmente. Antes de usar o backend GitHub, é necessário que `config-repo/` exista no repositório e label indicados. Um commit local não está disponível ao container que clona pelo HTTPS.
+As branches desta aula estão publicadas no repositório do professor. Ao reproduzir em outro repositório, antes de usar o backend GitHub, é necessário que `config-repo/` exista no repositório e label indicados. Um commit local não está disponível ao container que clona pelo HTTPS.
 
 Opção A: usar este monorepo e publicar as branches da aula, com permissão de escrita no remoto:
 
@@ -144,6 +144,17 @@ Os demais clientes seguem a mesma regra, com bancos/Rabbit e Keycloak acessívei
 | Cliente conecta em localhost dentro do container | Confira profile docker e arquivo `<application>-docker.yml` no Git |
 | Alteração não aparece no processo | Confira SHA no servidor e reinicie/recrie o cliente |
 | Aplicação desconhecida recebe configuração comum | `application.yml` é compartilhado; não use resposta não vazia como validação de nomes |
+
+## Validação realizada em 25/10/2026
+
+- `./gradlew build`: concluído.
+- `./gradlew test --rerun-tasks`: 47 testes, zero falhas e zero ignorados, incluindo RabbitMQ/MongoDB/MySQL com Testcontainers.
+- Compose completo iniciado; serviços com healthcheck saudáveis e realm Keycloak acessível.
+- `smoke-config.py`: 12 combinações (seis aplicações × dois profiles) lidas do GitHub, label `codex/central-configuration`, com SHA de configuração `fe7bfd1719fd`.
+- `smoke-security.py`: JWTs reais, 401/403 e autorização no Gateway e composite; criação, consulta, repetição e exclusão assíncronas concluídas.
+- Label com `/` validada também na importação pelos clientes Gateway e composite.
+
+O código permanece na branch `codex/central-configuration`; a etapa anterior está preservada em `codex/spring-security-keycloak`. O `.env` local recebeu somente as variáveis Config ausentes. Os smokes criam produtos com IDs aleatórios e os excluem ao concluir; volumes e DLQs anteriores são preservados.
 
 ## Referências
 
