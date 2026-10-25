@@ -1,28 +1,12 @@
-server:
-  port: ${SERVER_PORT:7002}
 spring:
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    username: ${RABBITMQ_USER:workshop}
-    password: ${RABBITMQ_PASSWORD:workshop}
-    publisher-confirm-type: correlated
-    publisher-returns: true
-    connection-timeout: 5s
   application:
     name: recommendation
-  data:
-    mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/recommendation-db}
-      auto-index-creation: true
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    enabled: ${EUREKA_ENABLED:true}
-    serviceUrl:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  cloud:
+    config:
+      username: ${CONFIG_SERVER_USER:config}
+      password: ${CONFIG_SERVER_PASSWORD:config-workshop}
+      label: ${CONFIG_GIT_LABEL:main}

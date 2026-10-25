@@ -1,11 +1,32 @@
 name: workshop-microservices
 x-app-env: &app-env
+  SPRING_PROFILES_ACTIVE: docker
+  CONFIG_SERVER_URL: http://config-server:8888
+  CONFIG_SERVER_USER: ${CONFIG_SERVER_USER:-config}
+  CONFIG_SERVER_PASSWORD: ${CONFIG_SERVER_PASSWORD:-config-workshop}
+  CONFIG_GIT_LABEL: ${CONFIG_GIT_LABEL:-main}
   JAVA_TOOL_OPTIONS: -Xms64m -Xmx384m
-  EUREKA_URL: http://eureka-server:8761/eureka/
-  RABBITMQ_HOST: rabbitmq
   RABBITMQ_USER: ${RABBITMQ_USER:-workshop}
   RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-workshop}
 services:
+  config-server:
+    build: spring-cloud/config-server
+    image: workshop/config-server
+    environment:
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx384m
+      CONFIG_GIT_URI: ${CONFIG_GIT_URI:?Defina CONFIG_GIT_URI no .env conforme STEP-6}
+      CONFIG_GIT_LABEL: ${CONFIG_GIT_LABEL:-main}
+      CONFIG_GIT_USERNAME: ${CONFIG_GIT_USERNAME:-}
+      CONFIG_GIT_PASSWORD: ${CONFIG_GIT_PASSWORD:-}
+      CONFIG_SERVER_USER: ${CONFIG_SERVER_USER:-config}
+      CONFIG_SERVER_PASSWORD: ${CONFIG_SERVER_PASSWORD:-config-workshop}
+    ports: ["127.0.0.1:8888:8888"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8888/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1
     command: ["start-dev", "--import-realm"]
@@ -53,6 +74,9 @@ services:
       timeout: 5s
       retries: 40
   eureka-server:
+    depends_on:
+      config-server:
+        condition: service_healthy
     build: spring-cloud/eureka-server
     image: workshop/eureka-server
     environment:
@@ -70,8 +94,6 @@ services:
     image: workshop/gateway
     environment:
       <<: *app-env
-      KEYCLOAK_ISSUER: http://localhost:8180/realms/workshop
-      KEYCLOAK_JWKS: http://keycloak:8080/realms/workshop/protocol/openid-connect/certs
       SERVER_PORT: 8080
     ports: ["8080:8080"]
     healthcheck:
@@ -81,6 +103,8 @@ services:
       retries: 40
       start_period: 30s
     depends_on:
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
   product-service:
@@ -89,7 +113,6 @@ services:
     environment:
       <<: *app-env
       SERVER_PORT: 7001
-      MONGODB_URI: mongodb://mongodb:27017/product-db
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:7001/actuator/health"]
       interval: 5s
@@ -97,6 +120,8 @@ services:
       retries: 40
       start_period: 30s
     depends_on:
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       rabbitmq:
@@ -109,7 +134,6 @@ services:
     environment:
       <<: *app-env
       SERVER_PORT: 7002
-      MONGODB_URI: mongodb://mongodb:27017/recommendation-db
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:7002/actuator/health"]
       interval: 5s
@@ -117,6 +141,8 @@ services:
       retries: 40
       start_period: 30s
     depends_on:
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       rabbitmq:
@@ -129,7 +155,6 @@ services:
     environment:
       <<: *app-env
       SERVER_PORT: 7003
-      MYSQL_URL: jdbc:mysql://mysql:3306/review-db?allowPublicKeyRetrieval=true&useSSL=false
       MYSQL_USER: ${MYSQL_USER:-workshop}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-workshop}
     healthcheck:
@@ -139,6 +164,8 @@ services:
       retries: 40
       start_period: 30s
     depends_on:
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       rabbitmq:
@@ -150,8 +177,6 @@ services:
     image: workshop/product-composite-service
     environment:
       <<: *app-env
-      KEYCLOAK_ISSUER: http://localhost:8180/realms/workshop
-      KEYCLOAK_JWKS: http://keycloak:8080/realms/workshop/protocol/openid-connect/certs
       SERVER_PORT: 7100
     ports: ["7100:7100"]
     healthcheck:
@@ -161,6 +186,8 @@ services:
       retries: 40
       start_period: 30s
     depends_on:
+      config-server:
+        condition: service_healthy
       eureka-server:
         condition: service_healthy
       rabbitmq:

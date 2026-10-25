@@ -7,3 +7,5 @@ project(':microservices:product-composite-service').projectDir = file('microserv
 
 
 include 'microservices:product-service', 'microservices:review-service', 'microservices:recommendation-service', 'spring-cloud:eureka-server', 'spring-cloud:gateway'
+
+include 'spring-cloud:config-server'

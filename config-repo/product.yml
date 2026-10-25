@@ -1,0 +1,34 @@
+server:
+  port: ${SERVER_PORT:7001}
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_USER:workshop}
+    password: ${RABBITMQ_PASSWORD:workshop}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    connection-timeout: 5s
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/product-db}
+      auto-index-creation: true
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  override-with-generic-response: false

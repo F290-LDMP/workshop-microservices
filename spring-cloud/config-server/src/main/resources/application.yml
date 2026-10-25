@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8888}
+spring:
+  application:
+    name: config-server
+  security:
+    user:
+      name: ${CONFIG_SERVER_USER:config}
+      password: ${CONFIG_SERVER_PASSWORD:config-workshop}
+  cloud:
+    config:
+      server:
+        accept-empty: false
+        git:
+          uri: ${CONFIG_GIT_URI}
+          default-label: ${CONFIG_GIT_LABEL:main}
+          search-paths: config-repo
+          clone-on-start: true
+          force-pull: true
+          timeout: 10
+          username: ${CONFIG_GIT_USERNAME:}
+          password: ${CONFIG_GIT_PASSWORD:}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

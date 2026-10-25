@@ -1,0 +1,16 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+}
+dependencyManagement { imports { mavenBom "org.springframework.cloud:spring-cloud-dependencies:${rootProject.springCloudVersion}" } }
+dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-config-server'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    systemProperty 'workshop.config.samples', "${rootProject.projectDir}/config-repo"
+}

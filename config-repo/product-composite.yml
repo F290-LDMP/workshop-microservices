@@ -1,0 +1,47 @@
+server:
+  port: ${SERVER_PORT:7100}
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/workshop}
+          jwk-set-uri: ${KEYCLOAK_JWKS:http://localhost:8180/realms/workshop/protocol/openid-connect/certs}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_USER:workshop}
+    password: ${RABBITMQ_PASSWORD:workshop}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    connection-timeout: 5s
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: false
+
+app:
+  services:
+    product: ${PRODUCT_SERVICE_ID:product}
+    recommendation: ${RECOMMENDATION_SERVICE_ID:recommendation}
+    review: ${REVIEW_SERVICE_ID:review}
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  override-with-generic-response: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

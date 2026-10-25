@@ -5,6 +5,14 @@ plugins {
 }
 dependencyManagement { imports { mavenBom "org.springframework.cloud:spring-cloud-dependencies:${rootProject.springCloudVersion}" } }
 dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-server'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+}
+
+// Testes usam os mesmos arquivos versionados sem depender de rede/Config Server.
+tasks.named('test') {
+    systemProperty 'spring.application.name', 'eureka-server'
+    systemProperty 'spring.cloud.config.enabled', 'false'
+    systemProperty 'spring.config.location', "file:${rootProject.projectDir}/config-repo/eureka-server.yml"
 }

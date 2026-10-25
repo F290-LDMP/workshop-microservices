@@ -1,14 +1,12 @@
-server:
-  port: ${SERVER_PORT:8761}
 spring:
   application:
     name: eureka-server
-eureka:
-  client:
-    register-with-eureka: false
-    fetch-registry: false
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  cloud:
+    config:
+      username: ${CONFIG_SERVER_USER:config}
+      password: ${CONFIG_SERVER_PASSWORD:config-workshop}
+      label: ${CONFIG_GIT_LABEL:main}

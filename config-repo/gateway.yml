@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8080}
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/workshop}
+          jwk-set-uri: ${KEYCLOAK_JWKS:http://localhost:8180/realms/workshop/protocol/openid-connect/certs}
+  cloud:
+    gateway:
+      routes:
+        - id: product-composite
+          uri: lb://product-composite
+          predicates:
+            - Path=/product-composite/**
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,14 @@
+info:
+  workshop:
+    application: product
+    profile: docker
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+spring:
+  rabbitmq:
+    host: rabbitmq
+  data:
+    mongodb:
+      uri: mongodb://mongodb:27017/product-db

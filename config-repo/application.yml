@@ -1,0 +1,9 @@
+# Configuração comum; não armazene credenciais reais neste Git.
+info:
+  workshop:
+    lesson: central-configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

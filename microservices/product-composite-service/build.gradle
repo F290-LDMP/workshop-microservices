@@ -11,8 +11,9 @@ dependencyManagement {
 }
 
 dependencies {
+    implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-    testImplementation 'org.springframework.security:spring-security-test' 
+    testImplementation 'org.springframework.security:spring-security-test'
     implementation project(':api')
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -21,4 +22,11 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${rootProject.springdocVersion}"
+}
+
+// Testes usam os mesmos arquivos versionados sem depender de rede/Config Server.
+tasks.named('test') {
+    systemProperty 'spring.application.name', 'product-composite'
+    systemProperty 'spring.cloud.config.enabled', 'false'
+    systemProperty 'spring.config.location', "file:${rootProject.projectDir}/config-repo/product-composite.yml"
 }

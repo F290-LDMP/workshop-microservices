@@ -8,8 +8,10 @@ Requer JDK 17, Docker e Compose. O Wrapper fornece Gradle 8.14.3.
 
 ```bash
 cp .env.example .env
+# Configure CONFIG_GIT_URI/LABEL para um GitHub que já contenha config-repo/ (STEP-6).
 ./gradlew clean build
 docker compose up --build -d --wait
+python3 scripts/smoke-config.py
 python3 scripts/smoke-security.py
 ```
 
@@ -29,14 +31,15 @@ docker compose build product-service
 docker compose up -d --no-deps product-service
 ```
 
-Eureka e Gateway seguem a mesma organização em `spring-cloud/eureka-server` e `spring-cloud/gateway`.
+Config Server, Eureka e Gateway seguem a mesma organização em `spring-cloud/eureka-server` e `spring-cloud/gateway`.
 
 ## Módulos
 
 - `api`: DTOs, contratos REST, envelope `Event<T>` e exceções.
 - `util`: erros HTTP, identificação de instância, OpenAPI e mensageria RabbitMQ no pacote `br.com.fatecararas.util.messaging`.
 - `microservices`: product-composite, product, review e recommendation.
-- `spring-cloud`: Eureka Server e Gateway reativo.
+- `spring-cloud`: Config Server com backend Git, Eureka Server e Gateway reativo.
+- `config-repo`: configurações comuns, por aplicação e por profile, para publicação no GitHub.
 
 A configuração `RabbitConfiguration` de `util` é importada explicitamente pelo composite e pelos núcleos. Eureka e Gateway não dependem de `util`. O contrato `Event<T>` permanece em `api`.
 
@@ -45,7 +48,7 @@ GET do composite consulta os núcleos por HTTP. POST e DELETE enviam comandos ao
 ## Etapas desta aula
 
 Branches locais em sequência: `codex/rabbitmq-base` → `codex/spring-security-keycloak` → `codex/central-configuration`.
-A etapa atual adiciona JWT no Gateway e no composite. Obtenha um token com `python3 scripts/keycloak-token.py writer`; os exemplos antigos das APIs agora exigem Bearer. Keycloak: http://localhost:8180.
+A branch de segurança adiciona JWT no Gateway e no composite. A branch atual também centraliza as configurações no Config Server (porta 8888), com backend GitHub e profiles local/docker; publique os arquivos antes de iniciar, conforme STEP-6. Obtenha um token com `python3 scripts/keycloak-token.py writer`; os exemplos antigos das APIs agora exigem Bearer. Keycloak: http://localhost:8180.
 
 ## Roteiros
 
@@ -53,6 +56,7 @@ A etapa atual adiciona JWT no Gateway e no composite. Obtenha um token com `pyth
 - [STEP-2 — Bibliotecas compartilhadas](docs/STEP-2-LIBS.md)
 - [STEP-2 — Integração dos serviços](docs/STEP-2.md)
 - [STEP-3 — Composite HTTP: etapa anterior](docs/STEP-3-COMPOSITE.md)
+- [STEP-6 — Config Server, GitHub e profiles](docs/STEP-6-CENTRAL-CONFIGURATION.md)
 - [STEP-5 — Spring Security e Keycloak](docs/STEP-5-SECURITY-KEYCLOAK.md)
 - [STEP-4 — RabbitMQ, infraestrutura, testes e falhas](docs/STEP-4-RABBITMQ.md)
 - [Aula prática — Feign + RabbitMQ e testes no Insomnia](docs/AULA-FEIGN-RABBITMQ.md)
