@@ -1,7 +1,14 @@
 server:
-  port: 7000
+  port: ${SERVER_PORT:7100}
 
 spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_USER:workshop}
+    password: ${RABBITMQ_PASSWORD:workshop}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    connection-timeout: 5s
   application:
     name: product-composite
   cloud:
@@ -16,6 +23,8 @@ app:
     review: ${REVIEW_SERVICE_ID:review}
 
 eureka:
+  instance:
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
@@ -26,3 +35,9 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
   override-with-generic-response: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

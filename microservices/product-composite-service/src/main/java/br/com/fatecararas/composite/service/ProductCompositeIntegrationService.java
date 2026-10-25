@@ -8,6 +8,9 @@ import br.com.fatecararas.api.core.product.Product;
 import br.com.fatecararas.api.core.recommendation.Recommendation;
 import br.com.fatecararas.api.core.review.Review;
 import br.com.fatecararas.api.exceptions.InvalidInputException;
+import br.com.fatecararas.api.core.DomainValidation;
+import br.com.fatecararas.api.event.Event;
+import br.com.fatecararas.util.messaging.EventPublisher;
 import br.com.fatecararas.composite.client.ProductClient;
 import br.com.fatecararas.composite.client.RecommendationClient;
 import br.com.fatecararas.composite.client.ReviewClient;
@@ -26,6 +29,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ProductCompositeIntegrationService {
+    private final EventPublisher publisher;
     private final ProductClient productClient;
     private final RecommendationClient recommendationClient;
     private final ReviewClient reviewClient;
@@ -35,6 +39,7 @@ public class ProductCompositeIntegrationService {
     private final ServiceIds serviceIds;
 
     public ProductCompositeIntegrationService(
+            EventPublisher publisher,
             ProductClient productClient,
             RecommendationClient recommendationClient,
             ReviewClient reviewClient,
@@ -42,6 +47,7 @@ public class ProductCompositeIntegrationService {
             DiscoveryClient discoveryClient,
             ServiceIds serviceIds,
             @Qualifier("applicationTaskExecutor") Executor executor) {
+        this.publisher = publisher;
         this.productClient = productClient;
         this.recommendationClient = recommendationClient;
         this.reviewClient = reviewClient;
@@ -53,44 +59,32 @@ public class ProductCompositeIntegrationService {
 
     public void create(ProductAggregate aggregate) {
         validateId(aggregate.getProductId());
-
-        Product product = new Product(
-                aggregate.getProductId(),
-                aggregate.getName(),
-                aggregate.getWeight(),
-                null
-        );
-
-        productClient.createProduct(product);
-
-        if (Objects.nonNull(aggregate.getRecommendations())) {
-            aggregate.getRecommendations()
-                    .forEach(item -> recommendationClient.createRecommendation(
-                                    new Recommendation(
-                                            aggregate.getProductId(),
-                                            item.getRecommendationId(),
-                                            item.getAuthor(),
-                                            item.getRate(),
-                                            item.getContent(),
-                                            null
-                                    )
-                            )
-                    );
+        var recommendations = aggregate.getRecommendations() == null
+                ? java.util.List.<RecommendationSummary>of() : aggregate.getRecommendations();
+        var reviews = aggregate.getReviews() == null
+                ? java.util.List.<ReviewSummary>of() : aggregate.getReviews();
+        var recommendationIds = new java.util.HashSet<Integer>();
+        var reviewIds = new java.util.HashSet<Integer>();
+        for (var item : recommendations) {
+            if (item == null) throw new InvalidInputException("Null recommendation");
+            validateId(item.getRecommendationId());
+            DomainValidation.rate(item.getRate());
+            if (!recommendationIds.add(item.getRecommendationId())) throw new InvalidInputException("Duplicate recommendationId");
         }
-        if (Objects.nonNull(aggregate.getReviews())) {
-            aggregate.getReviews()
-                    .forEach(item -> reviewClient.createReview(
-                                    new Review(
-                                            aggregate.getProductId(),
-                                            item.getReviewId(),
-                                            item.getAuthor(),
-                                            item.getSubject(),
-                                            item.getContent(),
-                                            null
-                                    )
-                            )
-                    );
+        for (var item : reviews) {
+            if (item == null) throw new InvalidInputException("Null review");
+            validateId(item.getReviewId());
+            if (!reviewIds.add(item.getReviewId())) throw new InvalidInputException("Duplicate reviewId");
         }
+        var correlationId = java.util.UUID.randomUUID();
+        publisher.publish("product", Event.create(correlationId, aggregate.getProductId(),
+                new Product(aggregate.getProductId(), aggregate.getName(), aggregate.getWeight(), null)));
+        for (var item : recommendations) publisher.publish("recommendation",
+                Event.create(correlationId, aggregate.getProductId(),
+                new Recommendation(aggregate.getProductId(), item.getRecommendationId(), item.getAuthor(), item.getRate(), item.getContent(), null)));
+        for (var item : reviews) publisher.publish("review",
+                Event.create(correlationId, aggregate.getProductId(),
+                new Review(aggregate.getProductId(), item.getReviewId(), item.getAuthor(), item.getSubject(), item.getContent(), null)));
     }
 
     public ProductAggregate get(int productId) {
@@ -128,9 +122,9 @@ public class ProductCompositeIntegrationService {
 
     public void delete(int productId) {
         validateId(productId);
-        productClient.deleteProduct(productId);
-        recommendationClient.deleteRecommendations(productId);
-        reviewClient.deleteReviews(productId);
+        var correlationId = java.util.UUID.randomUUID();
+        for (String destination : new String[]{"product", "recommendation", "review"})
+            publisher.publish(destination, Event.delete(correlationId, productId));
     }
 
     private void validateId(int productId) {

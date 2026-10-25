@@ -1,0 +1,1251 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-10-18T20:48:21.043870+00:00",
+  "__export_source": "workshop-microservices",
+  "resources": [
+    {
+      "_id": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "parentId": null,
+      "name": "Workshop — Feign + RabbitMQ",
+      "description": "Roteiro de aula: docs/AULA-FEIGN-RABBITMQ.md. Executar manualmente na ordem; cenários de falha exigem comandos Docker.",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_e065073d5d8150edbef3ee0c881876ca",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "composite_url": "http://localhost:7100",
+        "eureka_url": "http://localhost:8761",
+        "rabbit_url": "http://localhost:15672",
+        "rabbit_user": "workshop",
+        "rabbit_password": "workshop",
+        "product_id": 31001,
+        "backlog_id": 31002,
+        "broker_id": 31003,
+        "missing_id": 1999999000
+      },
+      "dataPropertyOrder": null,
+      "color": null,
+      "isPrivate": false,
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_d57221dd20ff5321a03898e058526236",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "00 — Preparação",
+      "description": "Conferir health, Eureka, topologia e filas antes da aula.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 0,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_76dee33341955bf18c200bbd7c3a7a48",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "01 — Rabbit escreve, Feign consulta",
+      "description": "Criação 202, leitura eventual e leitura completa 200; repetir payload é idempotente no consumidor.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 1,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_e86b4cd5ce9457b0bc8ab38f432a4e3f",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "02 — Consumidor desligado e retomada",
+      "description": "PARE review-service no terminal antes do POST. Observe a fila, inspecione o envelope, reinicie o serviço e consulte novamente.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 2,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_b9e6c901f78d5314a68656ee0d604935",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "03 — Conflito e DLQ",
+      "description": "Requer produto do cenário 01. Mesmo ID com nome diferente: HTTP 202, erro posterior em product.dlq.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 3,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_cde7594743e456bc8da9eb1ddcfd76ff",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "04 — Validação antes do Rabbit",
+      "description": "Requisições inválidas são rejeitadas antes da publicação.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 4,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_6660957714445dbaa189b4a0490938f2",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "05 — Mensagem malformada",
+      "description": "Publicação pela API administrativa é apenas uma ferramenta de laboratório; a aplicação usa AMQP.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 5,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_7cad7bc307855b2a86f1a2b1c2c6c358",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "06 — Broker indisponível",
+      "description": "PARE rabbitmq no terminal; POST deve retornar 503. Reinicie o broker, aguarde reconexão/descoberta e consulte o produto existente por Feign.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 6,
+      "_type": "request_group"
+    },
+    {
+      "_id": "fld_4658308627d65d308a71e498752b9a71",
+      "parentId": "wrk_637ec165a6d75b2b947f7cfddecda811",
+      "name": "07 — Limpeza dos produtos da aula",
+      "description": "Todos os serviços e broker devem estar ativos. DELETE retorna 202; aguarde os consumidores. DLQs não são apagadas por estas requisições.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": 7,
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_a2b9c50916eb565ba0afdc31b7cf41d3",
+      "parentId": "fld_d57221dd20ff5321a03898e058526236",
+      "name": "00.1 — Health do Gateway",
+      "description": "",
+      "url": "{{ _.base_url }}/actuator/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 10,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_f7ff15ea2e2557ed8a913a3d30716273",
+      "parentId": "fld_d57221dd20ff5321a03898e058526236",
+      "name": "00.2 — Health do composite",
+      "description": "",
+      "url": "{{ _.composite_url }}/actuator/health",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 11,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_ec9b9d1dfe3654f5996baf1af30412cb",
+      "parentId": "fld_d57221dd20ff5321a03898e058526236",
+      "name": "00.3 — Aplicações no Eureka",
+      "description": "Devem aparecer PRODUCT-COMPOSITE, PRODUCT, REVIEW e RECOMMENDATION registrados como UP.",
+      "url": "{{ _.eureka_url }}/eureka/apps",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 12,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_1b940dfc8f9b55738450e45c8d5bdeb1",
+      "parentId": "fld_d57221dd20ff5321a03898e058526236",
+      "name": "00.4 — Exchange de comandos",
+      "description": "",
+      "url": "{{ _.rabbit_url }}/api/exchanges/%2F/products.commands",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 13,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Exchange direct durável', () => { const b=insomnia.response.json(); insomnia.expect(b.type).to.eql('direct'); insomnia.expect(b.durable).to.eql(true); });",
+      "_type": "request"
+    },
+    {
+      "_id": "req_8b23b90ed74c54469c3a7191cd2d4639",
+      "parentId": "fld_d57221dd20ff5321a03898e058526236",
+      "name": "00.5 — Filas e contadores iniciais",
+      "description": "Registre mensagens e consumidores das seis filas. Contadores podem levar alguns segundos para atualizar.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 14,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_f8b4eba84e50528a9a9847cea1132a57",
+      "parentId": "fld_76dee33341955bf18c200bbd7c3a7a48",
+      "name": "01.1 — Criar agregado pelo RabbitMQ",
+      "description": "Um comando para cada núcleo. HTTP 202 confirma publicação, não a conclusão da gravação.",
+      "url": "{{ _.base_url }}/product-composite",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": {{ _.product_id }},\n  \"name\": \"Produto da aula\",\n  \"weight\": 100,\n  \"recommendations\": [\n    {\n      \"recommendationId\": 1,\n      \"author\": \"Ana\",\n      \"rate\": 5,\n      \"content\": \"Recomendo\"\n    }\n  ],\n  \"reviews\": [\n    {\n      \"reviewId\": 1,\n      \"author\": \"Bia\",\n      \"subject\": \"Qualidade\",\n      \"content\": \"Atendeu às expectativas\"\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 15,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 202', () => { insomnia.expect(insomnia.response.code).to.eql(202); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_2c29981bece257889a837a4de62e8c54",
+      "parentId": "fld_76dee33341955bf18c200bbd7c3a7a48",
+      "name": "01.2 — Consulta imediata por Feign",
+      "description": "200 ou 404 enquanto processa. Esta requisição não publica mensagens.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.product_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 16,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('Leitura eventual: 200 ou 404', () => { insomnia.expect([200,404]).to.include(insomnia.response.code); });",
+      "_type": "request"
+    },
+    {
+      "_id": "req_2d86f57fb09759b7a94583aec560cd8d",
+      "parentId": "fld_76dee33341955bf18c200bbd7c3a7a48",
+      "name": "01.3 — Aguardar agregado completo por Feign",
+      "description": "Reenvie após alguns segundos até as validações passarem. Não há polling automático nesta collection.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.product_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 17,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Agregado completo', () => {\n  const body = insomnia.response.json();\n  insomnia.expect(body.recommendations).to.have.lengthOf(1);\n  insomnia.expect(body.reviews).to.have.lengthOf(1);\n  insomnia.expect(body.recommendations[0].rate).to.eql(5);\n  insomnia.expect(body.serviceAddresses.pro).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rev).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rec).to.be.a('string');\n});",
+      "_type": "request"
+    },
+    {
+      "_id": "req_612e820b2e7e57e88f6610643bdc5acb",
+      "parentId": "fld_76dee33341955bf18c200bbd7c3a7a48",
+      "name": "01.4 — Observar filas após processamento",
+      "description": "Ready e Unacked normalmente voltam a zero; gráficos/rates podem aparecer por pouco tempo.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 18,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_fe20d1345305501fba336862929881e2",
+      "parentId": "fld_76dee33341955bf18c200bbd7c3a7a48",
+      "name": "01.5 — Repetir criação sem duplicação",
+      "description": "Enviar somente após 01.3. O conteúdo de negócio deve ser igual ao original.",
+      "url": "{{ _.base_url }}/product-composite",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": {{ _.product_id }},\n  \"name\": \"Produto da aula\",\n  \"weight\": 100,\n  \"recommendations\": [\n    {\n      \"recommendationId\": 1,\n      \"author\": \"Ana\",\n      \"rate\": 5,\n      \"content\": \"Recomendo\"\n    }\n  ],\n  \"reviews\": [\n    {\n      \"reviewId\": 1,\n      \"author\": \"Bia\",\n      \"subject\": \"Qualidade\",\n      \"content\": \"Atendeu às expectativas\"\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 19,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 202', () => { insomnia.expect(insomnia.response.code).to.eql(202); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_f576d48ab29d5f66bf426350f845f170",
+      "parentId": "fld_76dee33341955bf18c200bbd7c3a7a48",
+      "name": "01.6 — Confirmar um item por coleção",
+      "description": "",
+      "url": "{{ _.base_url }}/product-composite/{{ _.product_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 20,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Agregado completo', () => {\n  const body = insomnia.response.json();\n  insomnia.expect(body.recommendations).to.have.lengthOf(1);\n  insomnia.expect(body.reviews).to.have.lengthOf(1);\n  insomnia.expect(body.recommendations[0].rate).to.eql(5);\n  insomnia.expect(body.serviceAddresses.pro).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rev).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rec).to.be.a('string');\n});",
+      "_type": "request"
+    },
+    {
+      "_id": "req_ef1dbf5827975293a1902f84312cc09e",
+      "parentId": "fld_e86b4cd5ce9457b0bc8ab38f432a4e3f",
+      "name": "02.1 — Criar com review-service parado",
+      "description": "Antes: docker compose stop review-service. A publicação funciona com consumidor desligado.",
+      "url": "{{ _.base_url }}/product-composite",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": {{ _.backlog_id }},\n  \"name\": \"Produto com review pendente\",\n  \"weight\": 100,\n  \"recommendations\": [\n    {\n      \"recommendationId\": 1,\n      \"author\": \"Ana\",\n      \"rate\": 5,\n      \"content\": \"Recomendo\"\n    }\n  ],\n  \"reviews\": [\n    {\n      \"reviewId\": 1,\n      \"author\": \"Bia\",\n      \"subject\": \"Qualidade\",\n      \"content\": \"Atendeu às expectativas\"\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 21,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 202', () => { insomnia.expect(insomnia.response.code).to.eql(202); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_03ce77b923615460a87ce3c217e71eab",
+      "parentId": "fld_e86b4cd5ce9457b0bc8ab38f432a4e3f",
+      "name": "02.2 — Ver review.commands acumulada",
+      "description": "Repita após alguns segundos para atualizar as estatísticas. As outras duas filas continuam consumindo.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/review.commands",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 22,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Consumidor parado e fila acumulada', () => { const b=insomnia.response.json(); insomnia.expect(b.consumers).to.eql(0); insomnia.expect(b.messages_ready).to.be.at.least(1); });",
+      "_type": "request"
+    },
+    {
+      "_id": "req_ecc7e14f9fd251f5a69c29c0e2ebeab6",
+      "parentId": "fld_e86b4cd5ce9457b0bc8ab38f432a4e3f",
+      "name": "02.3 — Inspecionar envelope sem remover",
+      "description": "ack_requeue_true devolve a mensagem à fila. Pode marcar redelivered/alterar ordem; execute apenas para inspeção da aula.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/review.commands/get",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"count\": 10,\n  \"ackmode\": \"ack_requeue_true\",\n  \"encoding\": \"auto\",\n  \"truncate\": 50000\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 23,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_d9b2c227cc915cf9b36df33bc86ab8fb",
+      "parentId": "fld_e86b4cd5ce9457b0bc8ab38f432a4e3f",
+      "name": "02.4 — Conferir fila após reiniciar consumidor",
+      "description": "Antes: docker compose start review-service. Aguarde a conexão do listener e a atualização das estatísticas.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/review.commands",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 24,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Consumo retomado', () => { const b=insomnia.response.json(); insomnia.expect(b.consumers).to.be.at.least(1); insomnia.expect(b.messages_ready).to.eql(0); insomnia.expect(b.messages_unacknowledged).to.eql(0); });",
+      "_type": "request"
+    },
+    {
+      "_id": "req_344ed41397d4557dad661011e5892acf",
+      "parentId": "fld_e86b4cd5ce9457b0bc8ab38f432a4e3f",
+      "name": "02.5 — Consultar agregado após retomada",
+      "description": "Aguarde também a atualização do Eureka/LoadBalancer após reiniciar o serviço.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.backlog_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 25,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Agregado completo', () => {\n  const body = insomnia.response.json();\n  insomnia.expect(body.recommendations).to.have.lengthOf(1);\n  insomnia.expect(body.reviews).to.have.lengthOf(1);\n  insomnia.expect(body.recommendations[0].rate).to.eql(5);\n  insomnia.expect(body.serviceAddresses.pro).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rev).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rec).to.be.a('string');\n});",
+      "_type": "request"
+    },
+    {
+      "_id": "req_3e21775831b556b7987a5c4341d81217",
+      "parentId": "fld_b9e6c901f78d5314a68656ee0d604935",
+      "name": "03.1 — Contagem inicial de product.dlq",
+      "description": "",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/product.dlq",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 26,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n\ninsomnia.environment.set('product_dlq_before', insomnia.response.json().messages_ready);",
+      "_type": "request"
+    },
+    {
+      "_id": "req_7348ad84f44c55858d9377a585e4cf78",
+      "parentId": "fld_b9e6c901f78d5314a68656ee0d604935",
+      "name": "03.2 — Criar conflito com o mesmo productId",
+      "description": "Requer 01.3 completo. O broker aceita; o consumidor detecta conteúdo diferente para a chave existente.",
+      "url": "{{ _.base_url }}/product-composite",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": {{ _.product_id }},\n  \"name\": \"Nome conflitante\",\n  \"weight\": 100,\n  \"recommendations\": [\n    {\n      \"recommendationId\": 1,\n      \"author\": \"Ana\",\n      \"rate\": 5,\n      \"content\": \"Recomendo\"\n    }\n  ],\n  \"reviews\": [\n    {\n      \"reviewId\": 1,\n      \"author\": \"Bia\",\n      \"subject\": \"Qualidade\",\n      \"content\": \"Atendeu às expectativas\"\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 27,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 202', () => { insomnia.expect(insomnia.response.code).to.eql(202); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_648db79446555831a5f27538a485c712",
+      "parentId": "fld_b9e6c901f78d5314a68656ee0d604935",
+      "name": "03.3 — Ver conflito em product.dlq",
+      "description": "Compare com a contagem inicial. Inspecione o payload e confirme productId e nome conflitante.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/product.dlq",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 28,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('DLQ aumentou após o conflito', () => {\n  const before = insomnia.environment.get('product_dlq_before');\n  insomnia.expect(typeof before).to.eql('number');\n  insomnia.expect(insomnia.response.json().messages_ready).to.be.at.least(before + 1);\n});",
+      "_type": "request"
+    },
+    {
+      "_id": "req_ed781b8bb6a85175a7ffb5a47d91f484",
+      "parentId": "fld_b9e6c901f78d5314a68656ee0d604935",
+      "name": "03.4 — Inspecionar conflito sem remover",
+      "description": "Examine payload e properties.headers.x-death. As mensagens são devolvidas à DLQ.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/product.dlq/get",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"count\": 10,\n  \"ackmode\": \"ack_requeue_true\",\n  \"encoding\": \"auto\",\n  \"truncate\": 50000\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 29,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n\ninsomnia.test('Envelope do conflito da aula encontrado', () => {\n  const id = Number(insomnia.environment.get('product_id'));\n  const found = insomnia.response.json().some(message => {\n    try { const event = JSON.parse(message.payload); return event.productId === id && event.data.name === 'Nome conflitante'; }\n    catch { return false; }\n  });\n  insomnia.expect(found).to.eql(true);\n});",
+      "_type": "request"
+    },
+    {
+      "_id": "req_e9310a8ab936502b839cadd12d494636",
+      "parentId": "fld_b9e6c901f78d5314a68656ee0d604935",
+      "name": "03.5 — Feign lê os dados originais",
+      "description": "",
+      "url": "{{ _.base_url }}/product-composite/{{ _.product_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 30,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Agregado completo', () => {\n  const body = insomnia.response.json();\n  insomnia.expect(body.recommendations).to.have.lengthOf(1);\n  insomnia.expect(body.reviews).to.have.lengthOf(1);\n  insomnia.expect(body.recommendations[0].rate).to.eql(5);\n  insomnia.expect(body.serviceAddresses.pro).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rev).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rec).to.be.a('string');\n});\ninsomnia.test('Nome original preservado', () => { insomnia.expect(insomnia.response.json().name).to.eql('Produto da aula'); });",
+      "_type": "request"
+    },
+    {
+      "_id": "req_e91fa89b72d75952a39d38b967ed22f5",
+      "parentId": "fld_cde7594743e456bc8da9eb1ddcfd76ff",
+      "name": "04.1 — Nota inválida — 422 antes da publicação",
+      "description": "Não publica comandos. Compare os contadores e logs antes/depois.",
+      "url": "{{ _.base_url }}/product-composite",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": {{ _.product_id }},\n  \"name\": \"Produto da aula\",\n  \"weight\": 100,\n  \"recommendations\": [\n    {\n      \"recommendationId\": 1,\n      \"author\": \"Ana\",\n      \"rate\": 6,\n      \"content\": \"Recomendo\"\n    }\n  ],\n  \"reviews\": [\n    {\n      \"reviewId\": 1,\n      \"author\": \"Bia\",\n      \"subject\": \"Qualidade\",\n      \"content\": \"Atendeu às expectativas\"\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 31,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 422', () => { insomnia.expect(insomnia.response.code).to.eql(422); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_4bbf52c0d99f5ffca35ecf389d20839e",
+      "parentId": "fld_cde7594743e456bc8da9eb1ddcfd76ff",
+      "name": "04.2 — ID inválido — 422",
+      "description": "",
+      "url": "{{ _.base_url }}/product-composite/0",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 32,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 422', () => { insomnia.expect(insomnia.response.code).to.eql(422); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_4a0e7bb7dd515529b20f32d306060d13",
+      "parentId": "fld_cde7594743e456bc8da9eb1ddcfd76ff",
+      "name": "04.3 — Produto inexistente — 404 por Feign",
+      "description": "Use missing_id ainda não cadastrado. Todos os núcleos precisam estar disponíveis.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.missing_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 33,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 404', () => { insomnia.expect(insomnia.response.code).to.eql(404); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_cd5ba790651c50a287af5ae409573ad5",
+      "parentId": "fld_6660957714445dbaa189b4a0490938f2",
+      "name": "05.0 — Registrar contagem inicial de review.dlq",
+      "description": "Enviar antes de 05.1. Guarda review_dlq_before para distinguir mensagens novas das experiências anteriores.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/review.dlq",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 34,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.environment.set('review_dlq_before', insomnia.response.json().messages_ready);",
+      "_type": "request"
+    },
+    {
+      "_id": "req_f04e4b1d4cec543cbf657847339baef1",
+      "parentId": "fld_6660957714445dbaa189b4a0490938f2",
+      "name": "05.1 — Publicar JSON inválido para review",
+      "description": "API HTTP administrativa apenas para demonstração. A aplicação publica via AMQP. O listener deve enviar a mensagem inválida à review.dlq.",
+      "url": "{{ _.rabbit_url }}/api/exchanges/%2F/products.commands/publish",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"properties\": {\n    \"content_type\": \"application/json\",\n    \"delivery_mode\": 2\n  },\n  \"routing_key\": \"review\",\n  \"payload\": \"isto nao e JSON\",\n  \"payload_encoding\": \"string\"\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 35,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Mensagem roteada pelo broker', () => { insomnia.expect(insomnia.response.json().routed).to.eql(true); });",
+      "_type": "request"
+    },
+    {
+      "_id": "req_300603ee5ebf525b9a5e11a91b8f0d67",
+      "parentId": "fld_6660957714445dbaa189b4a0490938f2",
+      "name": "05.2 — Ver review.dlq",
+      "description": "",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/review.dlq",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 36,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('DLQ aumentou após a mensagem inválida', () => {\n  const before = insomnia.environment.get('review_dlq_before');\n  insomnia.expect(typeof before).to.eql('number');\n  insomnia.expect(insomnia.response.json().messages_ready).to.be.at.least(before + 1);\n});",
+      "_type": "request"
+    },
+    {
+      "_id": "req_7aaed804c506501da1d56b2786de2241",
+      "parentId": "fld_6660957714445dbaa189b4a0490938f2",
+      "name": "05.3 — Inspecionar mensagem inválida sem remover",
+      "description": "",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F/review.dlq/get",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"count\": 10,\n  \"ackmode\": \"ack_requeue_true\",\n  \"encoding\": \"auto\",\n  \"truncate\": 50000\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 37,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n\ninsomnia.test('Payload inválido encontrado', () => { insomnia.expect(insomnia.response.json().some(message => message.payload === 'isto nao e JSON')).to.eql(true); });",
+      "_type": "request"
+    },
+    {
+      "_id": "req_842dee0adc5c51a3803adf9785b0cb19",
+      "parentId": "fld_7cad7bc307855b2a86f1a2b1c2c6c358",
+      "name": "06.1 — Broker parado — publicação falha",
+      "description": "Antes: docker compose stop rabbitmq. Aguarde o timeout e confirme HttpErrorInfo 503. Não use este POST com broker ativo durante o ensaio deste cenário.",
+      "url": "{{ _.base_url }}/product-composite",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": {{ _.broker_id }},\n  \"name\": \"Produto com broker desligado\",\n  \"weight\": 100,\n  \"recommendations\": [\n    {\n      \"recommendationId\": 1,\n      \"author\": \"Ana\",\n      \"rate\": 5,\n      \"content\": \"Recomendo\"\n    }\n  ],\n  \"reviews\": [\n    {\n      \"reviewId\": 1,\n      \"author\": \"Bia\",\n      \"subject\": \"Qualidade\",\n      \"content\": \"Atendeu às expectativas\"\n    }\n  ]\n}"
+      },
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        },
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 38,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 503', () => { insomnia.expect(insomnia.response.code).to.eql(503); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_0ebd926266315bd1a71803b89254cfd3",
+      "parentId": "fld_7cad7bc307855b2a86f1a2b1c2c6c358",
+      "name": "06.2 — Consultar por Feign após restaurar o broker",
+      "description": "Antes: docker compose start rabbitmq. Aguarde reconexão e descoberta dos núcleos; reenvie até 200. GET usa Feign, mas a disponibilidade da infraestrutura e do registro pode afetar o resultado.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.product_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 39,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\ninsomnia.test('Agregado completo', () => {\n  const body = insomnia.response.json();\n  insomnia.expect(body.recommendations).to.have.lengthOf(1);\n  insomnia.expect(body.reviews).to.have.lengthOf(1);\n  insomnia.expect(body.recommendations[0].rate).to.eql(5);\n  insomnia.expect(body.serviceAddresses.pro).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rev).to.be.a('string');\n  insomnia.expect(body.serviceAddresses.rec).to.be.a('string');\n});",
+      "_type": "request"
+    },
+    {
+      "_id": "req_f183277e32515eaab1ccc6f845de6351",
+      "parentId": "fld_4658308627d65d308a71e498752b9a71",
+      "name": "07.1 — Excluir produto principal",
+      "description": "Execute com broker e consumidores ativos. Também é seguro para ID inexistente.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.product_id }}",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 40,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 202', () => { insomnia.expect(insomnia.response.code).to.eql(202); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_0cfe05030d9f56d9aeef50815af24179",
+      "parentId": "fld_4658308627d65d308a71e498752b9a71",
+      "name": "07.2 — Excluir produto backlog",
+      "description": "Execute com broker e consumidores ativos. Também é seguro para ID inexistente.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.backlog_id }}",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 41,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 202', () => { insomnia.expect(insomnia.response.code).to.eql(202); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_8e5475b27b6c52ec9a6925a24a623b17",
+      "parentId": "fld_4658308627d65d308a71e498752b9a71",
+      "name": "07.3 — Excluir produto falha do broker",
+      "description": "Execute com broker e consumidores ativos. Também é seguro para ID inexistente.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.broker_id }}",
+      "method": "DELETE",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 42,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 202', () => { insomnia.expect(insomnia.response.code).to.eql(202); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_e06323399cd25807bf0894265ad7c259",
+      "parentId": "fld_4658308627d65d308a71e498752b9a71",
+      "name": "07.4 — Aguardar produto principal ausente",
+      "description": "Reenvie até 404. Para confirmar coleções vazias, use os comandos dos núcleos no roteiro.",
+      "url": "{{ _.base_url }}/product-composite/{{ _.product_id }}",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {},
+      "metaSortKey": 43,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 404', () => { insomnia.expect(insomnia.response.code).to.eql(404); });\n",
+      "_type": "request"
+    },
+    {
+      "_id": "req_4471be86090750ee860050f0456811e2",
+      "parentId": "fld_4658308627d65d308a71e498752b9a71",
+      "name": "07.5 — Verificar filas após limpeza",
+      "description": "As filas de comandos devem esvaziar. As DLQs ficam preservadas para investigação.",
+      "url": "{{ _.rabbit_url }}/api/queues/%2F",
+      "method": "GET",
+      "body": {},
+      "parameters": [],
+      "headers": [
+        {
+          "name": "Accept",
+          "value": "application/json"
+        }
+      ],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.rabbit_user }}",
+        "password": "{{ _.rabbit_password }}"
+      },
+      "metaSortKey": 44,
+      "isPrivate": false,
+      "settingStoreCookies": false,
+      "settingSendCookies": false,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('HTTP esperado: 200', () => { insomnia.expect(insomnia.response.code).to.eql(200); });\n",
+      "_type": "request"
+    }
+  ]
+}

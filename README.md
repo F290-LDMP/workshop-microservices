@@ -1,159 +1,80 @@
 # workshop-microservices
 
-Base Gradle multi-project para o workshop de microservices da FATEC Araras.
+Workshop de microserviços da FATEC Araras: Spring Boot, OpenFeign/Eureka, MongoDB, MySQL e RabbitMQ com Spring AMQP.
 
-## Pré-requisitos
+## Executar o ambiente completo
 
-- JDK 17, com `JAVA_HOME` apontando para sua instalação. O Gradle usa a toolchain Java 17 para compilação e testes.
-- Acesso à internet na primeira execução para baixar o Gradle e as dependências.
-- Gradle 8.14.3 fornecido pelo Wrapper; não é necessário instalar Gradle.
-
-## Estrutura
-
-```text
-workshop-microservices/
-├── .gitignore
-├── README.md
-├── docs/
-│   ├── STEP-1.md
-│   ├── STEP-2-LIBS.md
-│   ├── STEP-2.md
-│   └── STEP-3-COMPOSITE.md
-├── settings.gradle
-├── build.gradle
-├── gradlew
-├── gradlew.bat
-├── gradle/
-│   ├── gradle-daemon-jvm.properties
-│   └── wrapper/
-│       ├── gradle-wrapper.jar
-│       └── gradle-wrapper.properties
-├── api/
-│   ├── build.gradle
-│   └── src/main/java/br/com/fatecararas/api/
-│       ├── exceptions/                  # NotFoundException, InvalidInputException
-│       ├── core/product/                # Product, ProductService
-│       ├── core/recommendation/         # Recommendation, RecommendationService
-│       ├── core/review/                 # Review, ReviewService
-│       └── composite/product/           # ProductAggregate, RecommendationSummary,
-│                                         # ReviewSummary, ServiceAddresses,
-│                                         # ProductCompositeService
-├── util/
-│   ├── build.gradle
-│   └── src/main/java/br/com/fatecararas/util/
-│       ├── http/                        # ServiceUtil, HttpErrorInfo,
-│       │                                # GlobalControllerExceptionHandler
-│       └── openapi/                     # OpenApiConfiguration
-├── spring-cloud/.gitkeep
-└── microservices/
-    └── product-composite-service/    # BFF com OpenFeign + Swagger
-```
-
-- `api`: contratos do workshop — 7 DTOs, 2 exceções de negócio e as 4 interfaces REST com anotações Swagger OpenAPI. Não depende de `util`; expõe `spring-web` e `swagger-annotations-jakarta` via configuração `api`.
-- `util`: utilitários compartilhados — identificação da instância (`ServiceUtil`), formato de erro (`HttpErrorInfo`), tratamento global (`GlobalControllerExceptionHandler`) e metadados do OpenAPI (`OpenApiConfiguration`). Depende de `api`, sem ciclo.
-- `spring-cloud`: receberá os projetos Eureka e Gateway da equipe responsável; contém apenas `.gitkeep`.
-- `microservices`: contém `product-composite-service`; receberá product, review e recommendation quando integrados.
-
-As bibliotecas usam `java-library` e geram JARs comuns: não possuem classe `main`, servidor HTTP, `application.yml` nem `bootRun`. O `product-composite-service` é uma aplicação Spring MVC executável, incluída como subprojeto Gradle. Os outros serviços e o stack spring-cloud ainda não estão incorporados.
-
-O módulo `api` usa Lombok nos DTOs `Product`, `ProductAggregate`, `RecommendationSummary`, `ReviewSummary` e `ServiceAddresses`. A versão (`1.18.48`) fica centralizada em `build.gradle`; `api/build.gradle` configura o annotation processor e as dependências `compileOnly`/de teste. Lombok gera os accessors e construtores durante a compilação do JAR, portanto os serviços que consomem `api` não precisam adicioná-lo como dependência de runtime.
-
-## Documentação do workshop
-
-- [STEP-1 — APIs, Eureka e Gateway](docs/STEP-1.md): contratos e tarefas das equipes.
-- [STEP-2 — Bibliotecas compartilhadas](docs/STEP-2-LIBS.md): preparação da base, implementação de `util` e `api`, tratamento de erros e Swagger OpenAPI.
-- [STEP-2 — Integração dos serviços](docs/STEP-2.md): integração dos núcleos, Docker e balanceamento de carga.
-- [STEP-3 — Implementação do product-composite](docs/STEP-3-COMPOSITE.md): BFF com OpenFeign, orquestração, erros remotos e Swagger.
-
-## Java usado pelo Gradle
-
-`gradle/gradle-daemon-jvm.properties` fixa a JVM do daemon em Java 17, independentemente da versão apontada por `JAVA_HOME`. É necessário ter um JDK 17 instalado e detectável pelo Gradle; não há download automático de JDK configurado.
-
-A toolchain em `build.gradle` também seleciona Java 17 para compilação e testes. Essas configurações têm papéis distintos: apenas a toolchain não impede que o próprio Gradle seja iniciado com uma JVM incompatível.
-
-Se precisar selecionar o JDK no terminal com SDKMAN, execute `sdk use java <identificador-do-jdk-17-instalado>`. No IntelliJ, configure o Project SDK e o Gradle JVM para JDK 17.
-
-## Verificação da base
-
-Execute na raiz do repositório:
+Requer JDK 17, Docker e Compose. O Wrapper fornece Gradle 8.14.3.
 
 ```bash
-./gradlew --version
+cp .env.example .env
+./gradlew clean build
+docker compose up --build -d --wait
+python3 scripts/smoke-messaging.py
+```
+
+Gateway: http://localhost:8080 · Eureka: http://localhost:8761 · RabbitMQ Management: http://localhost:15672 · Swagger: http://localhost:7100/swagger-ui.html
+
+Credenciais locais do RabbitMQ: `workshop` / `workshop`; configure-as no `.env`.
+
+## Imagens Docker
+
+Cada aplicação tem seu próprio `Dockerfile` e `.dockerignore` no diretório do módulo. O Compose usa esse diretório como contexto, como em `build: microservices/product-service`, e nomeia a imagem como `workshop/product-service`.
+
+Execute `./gradlew build` na raiz antes de construir as imagens. Os Dockerfiles copiam o JAR executável de `build/libs` de cada módulo; as bibliotecas `api` e `util` já estão incluídas no JAR pelo Spring Boot. Para reconstruir somente uma aplicação:
+
+```bash
+./gradlew :microservices:product-service:bootJar
+docker compose build product-service
+docker compose up -d --no-deps product-service
+```
+
+Eureka e Gateway seguem a mesma organização em `spring-cloud/eureka-server` e `spring-cloud/gateway`.
+
+## Módulos
+
+- `api`: DTOs, contratos REST, envelope `Event<T>` e exceções.
+- `util`: erros HTTP, identificação de instância, OpenAPI e mensageria RabbitMQ no pacote `br.com.fatecararas.util.messaging`.
+- `microservices`: product-composite, product, review e recommendation.
+- `spring-cloud`: Eureka Server e Gateway reativo.
+
+A configuração `RabbitConfiguration` de `util` é importada explicitamente pelo composite e pelos núcleos. Eureka e Gateway não dependem de `util`. O contrato `Event<T>` permanece em `api`.
+
+GET do composite consulta os núcleos por HTTP. POST e DELETE enviam comandos ao RabbitMQ e retornam 202 após confirmação do broker; os bancos são atualizados de forma assíncrona. Consulte o roteiro para entender consistência eventual, publicação parcial e DLQ.
+
+## Roteiros
+
+- [STEP-1 — Contratos e equipes](docs/STEP-1.md)
+- [STEP-2 — Bibliotecas compartilhadas](docs/STEP-2-LIBS.md)
+- [STEP-2 — Integração dos serviços](docs/STEP-2.md)
+- [STEP-3 — Composite HTTP: etapa anterior](docs/STEP-3-COMPOSITE.md)
+- [STEP-4 — RabbitMQ, infraestrutura, testes e falhas](docs/STEP-4-RABBITMQ.md)
+- [Aula prática — Feign + RabbitMQ e testes no Insomnia](docs/AULA-FEIGN-RABBITMQ.md)
+- [Collection Insomnia — 35 requisições na ordem da aula](docs/insomnia/workshop-feign-rabbitmq.json)
+
+Os STEPs anteriores documentam a evolução do workshop. O STEP-4 descreve o comportamento atual de escrita assíncrona.
+
+## Desenvolvimento e verificação
+
+```bash
 ./gradlew projects
 ./gradlew clean build
 ```
 
-No Windows, use `gradlew.bat` no lugar de `./gradlew`. Se necessário, no Linux/macOS restaure a permissão com `chmod +x gradlew`.
+Todos os módulos usam a toolchain Java 17. Spring Boot 3.0.4, Spring Cloud 2022.0.2 e springdoc 2.0.2 permanecem alinhados à base do workshop. As dependências AMQP são gerenciadas pelo BOM do Spring Boot.
 
-O build inclui `api`, `util` e `microservices:product-composite-service`. O composite precisa do Eureka e dos três serviços de núcleo em execução para completar as chamadas. Consulte o STEP-3 para iniciar e conferir a aplicação.
+Os testes com Testcontainers usam Docker; sem daemon disponível, são ignorados. Os demais testes continuam executáveis. O smoke usa polling e requer o ambiente completo iniciado.
 
-Saída real resumida dos dois primeiros comandos:
+Para execução fora do Docker, configure os bancos, RabbitMQ e Eureka pelas variáveis descritas no STEP-4 e use `./gradlew :microservices:<serviço>:bootRun`. A porta padrão local do composite é 7100 e aceita `SERVER_PORT`.
 
-```text
-$ ./gradlew --version
-Gradle 8.14.3
-Launcher JVM:  25.0.2 (Amazon.com Inc. 25.0.2+10-LTS)
-Daemon JVM:    Compatible with Java 17, any vendor, nativeImageCapable=false (from gradle/gradle-daemon-jvm.properties)
+## Fluxo completo — Feign e RabbitMQ
 
-$ ./gradlew projects
-Root project 'workshop-microservices'
-+--- Project ':api'
-+--- Project ':microservices'
-|    \--- Project ':microservices:product-composite-service'
-\--- Project ':util'
-```
+Gateway e composite usam a descoberta de serviços do Eureka nas chamadas HTTP. O fluxo acontece em três etapas:
 
-O `Launcher JVM` é a JVM do seu terminal e pode ser mais recente; o `Daemon JVM` deve indicar Java 17, comprovando que `gradle/gradle-daemon-jvm.properties` está em uso.
+1. **Escrita (POST ou DELETE):** o cliente envia a requisição pelo Gateway ao composite, que valida os dados e publica comandos na exchange `products.commands`, com routing keys `product`, `recommendation` e `review`. Dados inválidos retornam 400/422 antes da publicação. Cada publicação aguarda confirmação do broker e verificação de roteamento; quando todas têm sucesso, a resposta é `202 Accepted`. Falhas retornam 503 e interrompem novas publicações, mas comandos anteriores podem já ter sido aceitos.
+2. **Processamento assíncrono:** cada núcleo consome sua fila e confirma a mensagem (ACK) após concluir a operação no banco. Product e Recommendation usam MongoDB; Review usa MySQL. CREATE leva o DTO e gera um comando por item; DELETE leva `productId` com `data: null` e gera um comando por serviço, excluindo também todas as recomendações e reviews desse produto. Com o consumidor desligado, as mensagens aguardam na fila durável. Falhas transitórias têm até três tentativas totais; erros permanentes ou tentativas esgotadas encaminham a mensagem, via `products.dlx`, para a DLQ correspondente, sem replay automático.
+3. **Consulta (GET):** o cliente consulta pelo Gateway; o composite busca produto, recomendações e reviews em paralelo via OpenFeign/HTTP e monta o `ProductAggregate` com os endereços dos serviços. O sucesso retorna 200; produto ausente retorna 404 quando as demais consultas estão disponíveis; falhas de comunicação retornam erro HTTP. GET não publica nem consome comandos RabbitMQ.
 
-## Uso das libs
+O `202 Accepted` confirma a aceitação dos comandos pelo broker; os consumidores podem processá-los antes ou depois dessa resposta. A persistência deve ser verificada por consultas posteriores.
 
-Ao incorporar um serviço MVC, adicione as duas libs ao `build.gradle` do projeto:
-
-```groovy
-implementation project(':api')
-implementation project(':util')
-implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${rootProject.springdocVersion}"
-```
-
-O starter `webmvc-ui` pertence à aplicação: as libs sozinhas não publicam `/v3/api-docs` nem `/swagger-ui.html`. Não adicione `util` ao Gateway, que é reativo.
-
-O component scan padrão do serviço não encontra `br.com.fatecararas.util...`. Registre os componentes compartilhados na classe de aplicação:
-
-```java
-import org.springframework.context.annotation.Import;
-import br.com.fatecararas.util.http.GlobalControllerExceptionHandler;
-import br.com.fatecararas.util.http.ServiceUtil;
-import br.com.fatecararas.util.openapi.OpenApiConfiguration;
-
-@Import({ServiceUtil.class, GlobalControllerExceptionHandler.class, OpenApiConfiguration.class})
-```
-
-Implemente as interfaces de `api` nos controllers (`ProductService`, `ReviewService`, `RecommendationService`, `ProductCompositeService`) sem repetir `@GetMapping`/`@PostMapping`/`@DeleteMapping`. As seções 4 e 5 do [STEP-2-LIBS](docs/STEP-2-LIBS.md) explicam contratos, springdoc e como documentar operações, respostas de erro, exemplos e schemas; o [STEP-3-COMPOSITE](docs/STEP-3-COMPOSITE.md) mostra o resultado no BFF.
-
-### Endereços dos serviços agregados
-
-O `product-composite-service` configura em `application.yml` os **IDs de serviço** `product`, `recommendation` e `review`, que devem coincidir com o `spring.application.name` registrado por cada núcleo no Eureka. Os Feign clients usam esses IDs; Eureka/LoadBalancer resolve a instância e faz o balanceamento. Não configure `localhost` nem portas individuais para esses serviços no composite: isso contornaria a descoberta e não funcionaria ao escalar instâncias ou executar em Docker.
-
-A porta definida para o composite é `7000`. Se ela estiver ocupada, inicie-o com `SERVER_PORT=7100 ./gradlew :microservices:product-composite-service:bootRun` e use a porta alternativa nas URLs do Swagger e dos endpoints.
-
-Essa escolha segue o exemplo do [Capítulo 11](https://github.com/PacktPublishing/Microservices-with-Spring-Boot-and-Spring-Cloud-Fourth-Edition/tree/main/Chapter11): a integração usa destinos lógicos como `http://product`, `http://recommendation` e `http://review`, e o cliente com balanceamento os resolve pelo Eureka. No nosso projeto, os nomes são externalizados em `app.services` e referenciados pelos `@FeignClient`. Para outro nome de aplicação, defina `PRODUCT_SERVICE_ID`, `RECOMMENDATION_SERVICE_ID` ou `REVIEW_SERVICE_ID`; para mudar o endereço do Eureka, use `EUREKA_URL`.
-
-```yaml
-app:
-  services:
-    product: ${PRODUCT_SERVICE_ID:product}
-    recommendation: ${RECOMMENDATION_SERVICE_ID:recommendation}
-    review: ${REVIEW_SERVICE_ID:review}
-eureka:
-  client:
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-```
-
-## Convenções para as próximas etapas
-
-- Pacote raiz e grupo Gradle: `br.com.fatecararas`.
-- Versões alinhadas ao roteiro: Spring Boot 3.0.4, Spring Cloud 2022.0.2, springdoc 2.0.2 e Lombok 1.18.48.
-- As libs `api` e `util` já estão implementadas e versionadas; evite duplicar DTOs, interfaces, exceções ou o handler dentro dos serviços.
-- O `product-composite-service` é implementado neste repositório. Incorpore os demais serviços nos respectivos diretórios e inclua-os em `settings.gradle` quando presentes.
-- Use o Wrapper da raiz para todos os módulos.
+As gravações e exclusões têm consistência eventual e não formam uma transação distribuída. Um produto pode ser excluído antes de suas recomendações e reviews; receber 404 na consulta não comprova a conclusão das três exclusões. DELETE de registros já ausentes é idempotente. No CREATE, repetir a mesma chave com os mesmos dados é aceito pelo consumidor; conteúdo diferente gera conflito e vai para a DLQ.

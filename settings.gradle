@@ -5,4 +5,5 @@ include 'util', 'api'
 include 'microservices:product-composite-service'
 project(':microservices:product-composite-service').projectDir = file('microservices/product-composite-service')
 
-// Os demais serviços serão incluídos quando forem incorporados ao monorepo.
+
+include 'microservices:product-service', 'microservices:review-service', 'microservices:recommendation-service', 'spring-cloud:eureka-server', 'spring-cloud:gateway'

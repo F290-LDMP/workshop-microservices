@@ -1,5 +1,7 @@
 # STEP 2 — Preparação do monorepo + libs util e api + Swagger OpenAPI
 
+> Evolução no STEP-4: a biblioteca `util` também contém `br.com.fatecararas.util.messaging`, com configuração RabbitMQ e suporte à publicação/consumo. O contrato `Event<T>` fica em `api`. Esta etapa mantém os exemplos anteriores à mensageria; consulte o [STEP-4](STEP-4-RABBITMQ.md) para a estrutura atual.
+
 > Laboratório de Desenvolvimento Multiplataforma — FATEC Antonio Brambilla
 
 Esta é a primeira parte prática do [STEP-2](STEP-2.md). Partimos dos contratos do [STEP-1](STEP-1.md) para preparar o monorepo `workshop-microservices`, que receberá os projetos das cinco equipes. As instruções ficam em `docs/`, junto à base Gradle deste repositório.

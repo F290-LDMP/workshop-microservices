@@ -1,0 +1,156 @@
+name: workshop-microservices
+x-app-env: &app-env
+  JAVA_TOOL_OPTIONS: -Xms64m -Xmx384m
+  EUREKA_URL: http://eureka-server:8761/eureka/
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_USER: ${RABBITMQ_USER:-workshop}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-workshop}
+services:
+  rabbitmq:
+    image: rabbitmq:4.1.0-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-workshop}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-workshop}
+    ports: ["5672:5672", "15672:15672"]
+    volumes: ["rabbit-data:/var/lib/rabbitmq"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  mongodb:
+    image: mongo:6.0.4
+    ports: ["127.0.0.1:27017:27017"]
+    volumes: ["mongo-data:/data/db"]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  mysql:
+    image: mysql:8.0.32
+    ports: ["127.0.0.1:3306:3306"]
+    environment:
+      MYSQL_DATABASE: review-db
+      MYSQL_USER: ${MYSQL_USER:-workshop}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-workshop}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root-workshop}
+    volumes: ["mysql-data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=TCP -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD review-db -e 'SELECT 1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+  eureka-server:
+    build: spring-cloud/eureka-server
+    image: workshop/eureka-server
+    environment:
+      <<: *app-env
+      SERVER_PORT: 8761
+    ports: ["8761:8761"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8761/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+  gateway:
+    build: spring-cloud/gateway
+    image: workshop/gateway
+    environment:
+      <<: *app-env
+      SERVER_PORT: 8080
+    ports: ["8080:8080"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+  product-service:
+    build: microservices/product-service
+    image: workshop/product-service
+    environment:
+      <<: *app-env
+      SERVER_PORT: 7001
+      MONGODB_URI: mongodb://mongodb:27017/product-db
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7001/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+  recommendation-service:
+    build: microservices/recommendation-service
+    image: workshop/recommendation-service
+    environment:
+      <<: *app-env
+      SERVER_PORT: 7002
+      MONGODB_URI: mongodb://mongodb:27017/recommendation-db
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7002/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+  review-service:
+    build: microservices/review-service
+    image: workshop/review-service
+    environment:
+      <<: *app-env
+      SERVER_PORT: 7003
+      MYSQL_URL: jdbc:mysql://mysql:3306/review-db?allowPublicKeyRetrieval=true&useSSL=false
+      MYSQL_USER: ${MYSQL_USER:-workshop}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-workshop}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7003/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+  product-composite-service:
+    build: microservices/product-composite-service
+    image: workshop/product-composite-service
+    environment:
+      <<: *app-env
+      SERVER_PORT: 7100
+    ports: ["7100:7100"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:7100/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+volumes:
+  rabbit-data:
+  mongo-data:
+  mysql-data:

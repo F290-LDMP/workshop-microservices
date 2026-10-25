@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootApplication
 @EnableFeignClients
 @EnableConfigurationProperties(ServiceIds.class)
-@Import({ServiceUtil.class, GlobalControllerExceptionHandler.class, OpenApiConfiguration.class})
+@Import({br.com.fatecararas.util.messaging.RabbitConfiguration.class, ServiceUtil.class, GlobalControllerExceptionHandler.class, OpenApiConfiguration.class})
 public class ProductCompositeApplication {
     public static void main(String[] args) {
         SpringApplication.run(ProductCompositeApplication.class, args);

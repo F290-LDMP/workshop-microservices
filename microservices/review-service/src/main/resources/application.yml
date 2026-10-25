@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:7003}
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    username: ${RABBITMQ_USER:workshop}
+    password: ${RABBITMQ_PASSWORD:workshop}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    connection-timeout: 5s
+  application:
+    name: review
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/review-db}
+    username: ${MYSQL_USER:workshop}
+    password: ${MYSQL_PASSWORD:workshop}
+  jpa:
+    hibernate:
+      ddl-auto: update
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    enabled: ${EUREKA_ENABLED:true}
+    serviceUrl:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

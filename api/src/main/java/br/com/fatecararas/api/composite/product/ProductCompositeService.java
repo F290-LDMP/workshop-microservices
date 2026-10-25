@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 public interface ProductCompositeService {
     @Operation(
         summary = "Criar produto agregado",
-        description = "Cria o produto e, quando informados, suas recomendações e avaliações nos serviços de núcleo. A operação é uma cascata síncrona e não constitui uma transação distribuída.",
+        description = "Publica comandos de criação no RabbitMQ. HTTP 202 confirma aceitação pelo broker; persistência é assíncrona e não transacional. Consultas imediatas podem retornar 404 ou dados parciais.",
         requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "Dados do produto e coleções opcionais de recomendações e avaliações.",
             required = true,
@@ -28,7 +28,9 @@ public interface ProductCompositeService {
                 schema = @Schema(implementation = ProductAggregate.class),
                 examples = @ExampleObject(name = "Produto completo", value = "{\"productId\":1,\"name\":\"produto 1\",\"weight\":100,\"recommendations\":[{\"recommendationId\":1,\"author\":\"Ana\",\"rate\":5,\"content\":\"Ótimo produto\"}],\"reviews\":[{\"reviewId\":1,\"author\":\"Bia\",\"subject\":\"Qualidade\",\"content\":\"Atendeu às expectativas\"}]}"))))
     @ApiResponses({
-        @ApiResponse(responseCode = "202", description = "Produto e itens associados processados; resposta sem corpo", content = @Content),
+        @ApiResponse(responseCode = "503", description = "Publicação indisponível; parte dos comandos pode ter sido aceita",
+            content = @Content(schema = @Schema(ref = "#/components/schemas/HttpErrorInfo"))),
+        @ApiResponse(responseCode = "202", description = "Comandos aceitos pelo broker; processamento assíncrono, resposta sem corpo", content = @Content),
         @ApiResponse(responseCode = "400", description = "Requisição malformada",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(ref = "#/components/schemas/HttpErrorInfo"))),
@@ -63,9 +65,11 @@ public interface ProductCompositeService {
 
     @Operation(
         summary = "Excluir produto agregado",
-        description = "Remove o produto e solicita a exclusão das recomendações e avaliações associadas. DELETE é idempotente nos serviços de núcleo; a cascata não é transacional.")
+        description = "Publica comandos de exclusão para os três núcleos. A exclusão ocorre de forma assíncrona e idempotente, sem transação distribuída.")
     @ApiResponses({
-        @ApiResponse(responseCode = "202", description = "Produto e itens associados processados; resposta sem corpo", content = @Content),
+        @ApiResponse(responseCode = "503", description = "Publicação indisponível; parte dos comandos pode ter sido aceita",
+            content = @Content(schema = @Schema(ref = "#/components/schemas/HttpErrorInfo"))),
+        @ApiResponse(responseCode = "202", description = "Comandos aceitos pelo broker; processamento assíncrono, resposta sem corpo", content = @Content),
         @ApiResponse(responseCode = "400", description = "Requisição malformada",
             content = @Content(mediaType = "application/json",
                 schema = @Schema(ref = "#/components/schemas/HttpErrorInfo"))),

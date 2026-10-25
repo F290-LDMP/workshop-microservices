@@ -35,6 +35,12 @@ public class GlobalControllerExceptionHandler {
                 "Requisição inválida: confira o JSON e os parâmetros obrigatórios");
     }
 
+    @ExceptionHandler(br.com.fatecararas.api.exceptions.MessagingUnavailableException.class)
+    public ResponseEntity<HttpErrorInfo> messagingUnavailable(
+            br.com.fatecararas.api.exceptions.MessagingUnavailableException ex, HttpServletRequest request) {
+        return error(HttpStatus.SERVICE_UNAVAILABLE, request, ex.getMessage());
+    }
+
     private ResponseEntity<HttpErrorInfo> error(
             HttpStatus status, HttpServletRequest request, String message) {
         return ResponseEntity.status(status)
