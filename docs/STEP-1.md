@@ -1,5 +1,7 @@
 # STEP 1 — APIs básicas + Discovery (Eureka) + Edge Server (Gateway)
 
+> Etapa histórica. Para executar a base integrada com RabbitMQ, consulte STEP-4; segurança e autenticação estão no [STEP-5](STEP-5-SECURITY-KEYCLOAK.md).
+
 Instruções da atividade de hoje. Os grupos 1–4 implementam as APIs abaixo em repositórios separados; o grupo 5 implementa Discovery e Edge. Ao final, integramos tudo.
 
 > Este documento descreve a etapa original, na qual o composite era mockado. O estado atual substituiu esse mock pela integração OpenFeign; consulte [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md) para executar e validar a implementação presente.

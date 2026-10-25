@@ -1,5 +1,7 @@
 # STEP 3 — Product Composite com OpenFeign e Swagger
 
+> Registro histórico: a porta atual é 7100; os núcleos já estão integrados. Escritas usam RabbitMQ (STEP-4) e as APIs exigem Bearer na branch STEP-5. Os exemplos abaixo registram a etapa HTTP original.
+
 > Este roteiro parte da base com `api` e `util` implementadas. Ele implementa somente o `product-composite-service`; os núcleos (`product`, `review` e `recommendation`), Eureka e Gateway precisam ser incorporados pelos respectivos grupos conforme STEP-1/STEP-2.
 
 ## Objetivos e responsabilidades
@@ -143,7 +145,7 @@ Para exercitar as chamadas agregadas, inicie Eureka e os três núcleos e confir
 ./gradlew :microservices:product-composite-service:bootRun
 ```
 
-`app.services` define os IDs registrados no Eureka pelos três serviços de núcleo. Os Feign clients e a consulta de endereços usam os mesmos valores; não fixe hosts ou portas porque o Eureka/LoadBalancer seleciona as instâncias. Isso corresponde ao Capítulo 11 do [repositório de referência](https://github.com/PacktPublishing/Microservices-with-Spring-Boot-and-Spring-Cloud-Fourth-Edition/tree/main/Chapter11), que usa destinos lógicos `http://product`, `http://recommendation` e `http://review` com um cliente load-balanced. Sem Eureka/serviços registrados, a aplicação inicia mas as chamadas agregadas falham. A porta padrão atual é `7000`; se estiver ocupada, inicie com `SERVER_PORT=7100 ./gradlew :microservices:product-composite-service:bootRun` e substitua a porta nas URLs abaixo.
+`app.services` define os IDs registrados no Eureka pelos três serviços de núcleo. Os Feign clients e a consulta de endereços usam os mesmos valores; não fixe hosts ou portas porque o Eureka/LoadBalancer seleciona as instâncias. Isso corresponde ao Capítulo 11 do [repositório de referência](https://github.com/PacktPublishing/Microservices-with-Spring-Boot-and-Spring-Cloud-Third-Edition/tree/main/Chapter11), que usa destinos lógicos `http://product`, `http://recommendation` e `http://review` com um cliente load-balanced. Sem Eureka/serviços registrados, a aplicação inicia mas as chamadas agregadas falham. A porta padrão atual é `7000`; se estiver ocupada, inicie com `SERVER_PORT=7100 ./gradlew :microservices:product-composite-service:bootRun` e substitua a porta nas URLs abaixo.
 
 ## 6. Swagger / OpenAPI
 

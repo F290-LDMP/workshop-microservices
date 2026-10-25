@@ -1,5 +1,7 @@
 # STEP 2 — Integração dos serviços + Docker + balanceamento de carga
 
+> Etapa histórica. Para executar a base integrada com RabbitMQ, consulte STEP-4; segurança e autenticação estão no [STEP-5](STEP-5-SECURITY-KEYCLOAK.md).
+
 > **Comece pelos roteiros do repositório:** [STEP-2-LIBS](STEP-2-LIBS.md) explica `util` e `api`; [STEP-3-COMPOSITE](STEP-3-COMPOSITE.md) implementa o BFF. Eureka/Gateway e os três núcleos ainda devem ser incorporados pelas equipes.
 
 Este documento apresenta as etapas posteriores: incorporar os três serviços de núcleo e os projetos Eureka/Gateway, demonstrar o **balanceamento de carga** e dockerizar o cenário com possibilidade de escala. O composite com OpenFeign já está implementado conforme STEP-3.

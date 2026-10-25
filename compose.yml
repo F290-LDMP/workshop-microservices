@@ -6,6 +6,17 @@ x-app-env: &app-env
   RABBITMQ_USER: ${RABBITMQ_USER:-workshop}
   RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-workshop}
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin-workshop}
+      KC_HOSTNAME: http://localhost:8180
+    ports: ["127.0.0.1:8180:8080"]
+    volumes:
+      - ./infra/keycloak/workshop-realm.json:/opt/keycloak/data/import/workshop-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
   rabbitmq:
     image: rabbitmq:4.1.0-management
     environment:
@@ -59,6 +70,8 @@ services:
     image: workshop/gateway
     environment:
       <<: *app-env
+      KEYCLOAK_ISSUER: http://localhost:8180/realms/workshop
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/workshop/protocol/openid-connect/certs
       SERVER_PORT: 8080
     ports: ["8080:8080"]
     healthcheck:
@@ -137,6 +150,8 @@ services:
     image: workshop/product-composite-service
     environment:
       <<: *app-env
+      KEYCLOAK_ISSUER: http://localhost:8180/realms/workshop
+      KEYCLOAK_JWKS: http://keycloak:8080/realms/workshop/protocol/openid-connect/certs
       SERVER_PORT: 7100
     ports: ["7100:7100"]
     healthcheck:
@@ -151,6 +166,7 @@ services:
       rabbitmq:
         condition: service_healthy
 volumes:
+  keycloak-data:
   rabbit-data:
   mongo-data:
   mysql-data:

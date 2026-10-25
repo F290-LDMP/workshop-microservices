@@ -10,7 +10,7 @@ Requer JDK 17, Docker e Compose. O Wrapper fornece Gradle 8.14.3.
 cp .env.example .env
 ./gradlew clean build
 docker compose up --build -d --wait
-python3 scripts/smoke-messaging.py
+python3 scripts/smoke-security.py
 ```
 
 Gateway: http://localhost:8080 · Eureka: http://localhost:8761 · RabbitMQ Management: http://localhost:15672 · Swagger: http://localhost:7100/swagger-ui.html
@@ -42,17 +42,23 @@ A configuração `RabbitConfiguration` de `util` é importada explicitamente pel
 
 GET do composite consulta os núcleos por HTTP. POST e DELETE enviam comandos ao RabbitMQ e retornam 202 após confirmação do broker; os bancos são atualizados de forma assíncrona. Consulte o roteiro para entender consistência eventual, publicação parcial e DLQ.
 
+## Etapas desta aula
+
+Branches locais em sequência: `codex/rabbitmq-base` → `codex/spring-security-keycloak` → `codex/central-configuration`.
+A etapa atual adiciona JWT no Gateway e no composite. Obtenha um token com `python3 scripts/keycloak-token.py writer`; os exemplos antigos das APIs agora exigem Bearer. Keycloak: http://localhost:8180.
+
 ## Roteiros
 
 - [STEP-1 — Contratos e equipes](docs/STEP-1.md)
 - [STEP-2 — Bibliotecas compartilhadas](docs/STEP-2-LIBS.md)
 - [STEP-2 — Integração dos serviços](docs/STEP-2.md)
 - [STEP-3 — Composite HTTP: etapa anterior](docs/STEP-3-COMPOSITE.md)
+- [STEP-5 — Spring Security e Keycloak](docs/STEP-5-SECURITY-KEYCLOAK.md)
 - [STEP-4 — RabbitMQ, infraestrutura, testes e falhas](docs/STEP-4-RABBITMQ.md)
 - [Aula prática — Feign + RabbitMQ e testes no Insomnia](docs/AULA-FEIGN-RABBITMQ.md)
 - [Collection Insomnia — 35 requisições na ordem da aula](docs/insomnia/workshop-feign-rabbitmq.json)
 
-Os STEPs anteriores documentam a evolução do workshop. O STEP-4 descreve o comportamento atual de escrita assíncrona.
+Os STEPs anteriores documentam a evolução do workshop. O STEP-4 descreve as escritas assíncronas; o STEP-5 adiciona a segurança HTTP.
 
 ## Desenvolvimento e verificação
 

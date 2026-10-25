@@ -16,12 +16,16 @@ def request(method, path, body=None):
     data = None if body is None else json.dumps(body).encode()
     try:
         with urlopen(Request(BASE + path, data=data, method=method,
-                             headers={"Content-Type": "application/json"}), timeout=10) as response:
+                             headers={"Content-Type": "application/json", **({"Authorization": "Bearer " + os.environ["ACCESS_TOKEN"]} if os.environ.get("ACCESS_TOKEN") else {})}), timeout=10) as response:
             raw = response.read()
             return response.status, json.loads(raw) if raw else None
     except HTTPError as error:
         raw = error.read()
-        return error.code, json.loads(raw) if raw else None
+        try:
+            body = json.loads(raw) if raw else None
+        except ValueError:
+            body = raw.decode(errors="replace")
+        return error.code, body
 
 def eventually(description, condition):
     deadline = time.monotonic() + TIMEOUT

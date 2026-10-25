@@ -2,6 +2,12 @@ server:
   port: ${SERVER_PORT:7100}
 
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER:http://localhost:8180/realms/workshop}
+          jwk-set-uri: ${KEYCLOAK_JWKS:http://localhost:8180/realms/workshop/protocol/openid-connect/certs}
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     username: ${RABBITMQ_USER:workshop}
