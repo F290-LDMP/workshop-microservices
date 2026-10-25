@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import quote
 
 base = os.environ.get('CONFIG_SERVER_URL', 'http://localhost:8888').rstrip('/')
-label = os.environ.get('CONFIG_GIT_LABEL', 'codex/central-configuration').replace('/', '(_)')
+label = os.environ.get('CONFIG_GIT_LABEL', 'central-configuration').replace('/', '(_)')
 auth = base64.b64encode((os.environ.get('CONFIG_SERVER_USER', 'config') + ':' +
                         os.environ.get('CONFIG_SERVER_PASSWORD', 'config-workshop')).encode()).decode()
 path = '/product/docker/' + quote(label, safe='(_)')

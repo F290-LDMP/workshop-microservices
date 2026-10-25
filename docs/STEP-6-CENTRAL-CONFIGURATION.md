@@ -2,7 +2,7 @@
 
 ## Objetivo e sequência
 
-Esta etapa corresponde ao tema do capítulo 13 da terceira edição e parte da branch `codex/spring-security-keycloak`. A implementação fica em `codex/central-configuration`, preservando a segurança da etapa anterior.
+Esta etapa corresponde ao tema do capítulo 13 da terceira edição e parte da branch `spring-security-keycloak`. A implementação fica em `central-configuration`, preservando a segurança da etapa anterior.
 
 O GitHub versiona configurações; Config Server lê o Git; cada aplicação consulta o Config Server ao iniciar. O cliente não baixa arquivos diretamente do GitHub. O servidor não usa Eureka para iniciar, evitando o ciclo Config Server → Eureka → Config Server.
 
@@ -33,7 +33,7 @@ Os arquivos base preservam as configurações existentes e usam defaults para ex
 Para revisar somente esta etapa:
 
 ```bash
-git diff codex/spring-security-keycloak..codex/central-configuration
+git diff spring-security-keycloak..central-configuration
 ```
 
 ## 2. Publicar as configurações no GitHub
@@ -43,16 +43,16 @@ As branches desta aula estão publicadas no repositório do professor. Ao reprod
 Opção A: usar este monorepo e publicar as branches da aula, com permissão de escrita no remoto:
 
 ```bash
-git push -u origin codex/rabbitmq-base
-git push -u origin codex/spring-security-keycloak
-git push -u origin codex/central-configuration
+git push -u origin rabbitmq-base
+git push -u origin spring-security-keycloak
+git push -u origin central-configuration
 ```
 
 Nesse caso, `.env` deve conter:
 
 ```dotenv
 CONFIG_GIT_URI=https://github.com/F290-LDMP/workshop-microservices.git
-CONFIG_GIT_LABEL=codex/central-configuration
+CONFIG_GIT_LABEL=central-configuration
 CONFIG_SERVER_USER=config
 CONFIG_SERVER_PASSWORD=config-workshop
 ```
@@ -66,7 +66,7 @@ O `.env.example` usa o monorepo e a branch desta etapa como exemplo; a inicializ
 ## 3. Subir e verificar a configuração antes das APIs
 
 ```bash
-git switch codex/central-configuration
+git switch central-configuration
 # Somente se ainda não existir .env:
 cp .env.example .env
 # Edite CONFIG_GIT_URI/LABEL conforme a seção anterior.
@@ -74,17 +74,17 @@ cp .env.example .env
 docker compose up --build -d --wait config-server
 curl -fsS localhost:8888/actuator/health
 # 401 sem credenciais:
-curl -i 'localhost:8888/product/docker/codex(_)central-configuration'
+curl -i 'localhost:8888/product/docker/central-configuration'
 # Com os valores locais do exemplo:
 curl -fsS -u config:config-workshop \
-  'localhost:8888/product/docker/codex(_)central-configuration'
+  'localhost:8888/product/docker/central-configuration'
 python3 scripts/smoke-config.py
 docker compose up --build -d --wait
 # Aguarde Keycloak responder ao endpoint OIDC do STEP-5.
 python3 scripts/smoke-security.py
 ```
 
-O endpoint segue `/{application}/{profile}/{label}`. Nos requests HTTP diretos, branch com `/` usa `(_)`: `codex/central-configuration` vira `codex(_)central-configuration`. Se usa um repositório na main, consulte `/product/docker/main`. Nos valores `CONFIG_GIT_LABEL` dos clientes/servidor use o nome Git normal, com `/`.
+O endpoint segue `/{application}/{profile}/{label}`. Nos requests HTTP diretos, branch com `/` usa `(_)`: `aula/config` vira `aula(_)config`. Se usa um repositório na main, consulte `/product/docker/main`. Nos valores `CONFIG_GIT_LABEL` dos clientes/servidor use o nome Git normal, com `/`.
 
 A resposta JSON contém `name`, `profiles`, `label`, `version` (SHA Git) e `propertySources`. Fontes anteriores têm maior prioridade; `product-docker.yml` deve preceder `product.yml` e o arquivo comum. Compare `/product/local/<label>` com `/product/docker/<label>` e encontre `spring.rabbitmq.host`.
 
@@ -112,14 +112,14 @@ Config Server consulta Git para servir configurações; não envia automaticamen
 No host, o Config Server precisa receber a URI do Git antes de iniciar. Para um teste local do backend Git, com os arquivos já commitados nesta branch:
 
 ```bash
-CONFIG_GIT_URI="file://$PWD" CONFIG_GIT_LABEL=codex/central-configuration \
+CONFIG_GIT_URI="file://$PWD" CONFIG_GIT_LABEL=central-configuration \
   ./gradlew :spring-cloud:config-server:bootRun
 ```
 
 O backend continua sendo Git, não `native`. O modo `file:` opera sobre o repositório local e pode fazer checkout de labels; use uma cópia descartável se for experimentar outras labels, para preservar sua árvore de trabalho. GitHub é o caminho principal da aula; este comando é uma alternativa de laboratório sem rede. Em outro terminal:
 
 ```bash
-CONFIG_GIT_LABEL=codex/central-configuration SPRING_PROFILES_ACTIVE=local \
+CONFIG_GIT_LABEL=central-configuration SPRING_PROFILES_ACTIVE=local \
   ./gradlew :spring-cloud:eureka-server:bootRun
 ```
 
@@ -150,11 +150,11 @@ Os demais clientes seguem a mesma regra, com bancos/Rabbit e Keycloak acessívei
 - `./gradlew build`: concluído.
 - `./gradlew test --rerun-tasks`: 47 testes, zero falhas e zero ignorados, incluindo RabbitMQ/MongoDB/MySQL com Testcontainers.
 - Compose completo iniciado; serviços com healthcheck saudáveis e realm Keycloak acessível.
-- `smoke-config.py`: 12 combinações (seis aplicações × dois profiles) lidas do GitHub, label `codex/central-configuration`, com SHA de configuração `fe7bfd1719fd`.
+- `smoke-config.py`: 12 combinações (seis aplicações × dois profiles) lidas do GitHub, label `central-configuration`, com SHA de configuração `fe7bfd1719fd`.
 - `smoke-security.py`: JWTs reais, 401/403 e autorização no Gateway e composite; criação, consulta, repetição e exclusão assíncronas concluídas.
 - Label com `/` validada também na importação pelos clientes Gateway e composite.
 
-O código permanece na branch `codex/central-configuration`; a etapa anterior está preservada em `codex/spring-security-keycloak`. O `.env` local recebeu somente as variáveis Config ausentes. Os smokes criam produtos com IDs aleatórios e os excluem ao concluir; volumes e DLQs anteriores são preservados.
+O código permanece na branch `central-configuration`; a etapa anterior está preservada em `spring-security-keycloak`. O `.env` local recebeu somente as variáveis Config ausentes. Os smokes criam produtos com IDs aleatórios e os excluem ao concluir; volumes e DLQs anteriores são preservados.
 
 ## Referências
 

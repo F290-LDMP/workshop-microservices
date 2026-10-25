@@ -47,7 +47,7 @@ GET do composite consulta os núcleos por HTTP. POST e DELETE enviam comandos ao
 
 ## Etapas desta aula
 
-Branches locais em sequência: `codex/rabbitmq-base` → `codex/spring-security-keycloak` → `codex/central-configuration`.
+Branches locais em sequência: `rabbitmq-base` → `spring-security-keycloak` → `central-configuration`.
 A branch de segurança adiciona JWT no Gateway e no composite. A branch atual também centraliza as configurações no Config Server (porta 8888), com backend GitHub e profiles local/docker; publique os arquivos antes de iniciar, conforme STEP-6. Obtenha um token com `python3 scripts/keycloak-token.py writer`; os exemplos antigos das APIs agora exigem Bearer. Keycloak: http://localhost:8180.
 
 ## Roteiros
